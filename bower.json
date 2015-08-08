@@ -1,0 +1,38 @@
+{
+  "name": "mscrypto-adapter",
+  "main": "mscrypto-adapter.js",
+  "version": "0.0.1",
+  "authors": [
+    "Artem S Vybornov <vybornov@gmail.com>"
+  ],
+  "description": "Web Cryptography API adapter for Internet Explorer 11",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "crypto",
+    "subtle",
+    "mscrypto",
+    "aes",
+    "rsa",
+    "cbc",
+    "gcm",
+    "adapter",
+    "webcryptoapi"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "promise-polyfill": "~2.1.0",
+    "setImmediate": "~1.0.1"
+  },
+  "devDependencies": {
+    "jasmine-standalone": "~2.3.2"
+  }
+}
