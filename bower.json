@@ -6,6 +6,10 @@
     "Artem S Vybornov <vybornov@gmail.com>"
   ],
   "description": "Web Cryptography API adapter for Internet Explorer 11",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/vibornoff/mscrypto-adapter.git"
+  },
   "moduleType": [
     "globals"
   ],
