@@ -35,7 +35,7 @@ self.crypto || !function () {
         }
     }
 
-    var subtleAdapter = { digest: _digest };
+    var subtleAdapter = {};
     [ 'decrypt', 'deriveBits', 'deriveKey', 'digest', 'encrypt', 'exportKey', 'generateKey' ,'importKey', 'sign', 'unwrapKey', 'verify', 'wrapKey' ]
         .forEach( function ( method ) { subtleAdapter[method] = _adapt( _subtle[method] ) } );
 
