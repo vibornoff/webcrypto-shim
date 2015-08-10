@@ -1,7 +1,7 @@
 mscrypto-adapter.js
 ===================
 
-Web Cryptography API adapter for *Internet Explorer 11*
+Web Cryptography API adapter
 
 Quick start with Bower
 ----------------------
@@ -22,13 +22,22 @@ add add scripts into your html code
 
 Now you can access [Web Crypto API](www.w3.org/TR/WebCryptoAPI/) through `window.crypto` object.
 
-Bugs
-----
+Bugs and Limitations
+--------------------
 
- * [Doc claims](https://msdn.microsoft.com/en-us/library/dn302338(v=vs.85).aspx) *SHA-1* support for `digest`, but _NotSupportedError_ is thrown when trying to use it.
+ * *Crypto operation on an empty buffer never returns result*.
 
- * Crypto operation on an empty buffer never returns any result.
+ * No *SHA-1* support for `digest`, though [Doc claims](https://msdn.microsoft.com/en-us/library/dn302338(v=vs.85).aspx) it should work.
 
- * RSA `modulusLength` should be not less than _1024_.
+ * RSA `modulusLength` must be either one of: _1024_, _2048_, _4096_ bits.
 
- * *Firefox/39* lacks of *PBKDF2_SHA-256* support.
+ * RSA `publicExponent` must be either one of: _3_, _65537_.
+
+ * *AES-GCM* `iv` length must be exactly _96_ bits (_12_ octets).
+
+ * Seems `keyUsage` is completely ignored.
+
+Other browsers support
+----------------------
+
+https://diafygi.github.io/webcrypto-examples/
