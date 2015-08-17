@@ -15,8 +15,7 @@ $ bower install mscrypto-adapter
 add add scripts into your html code
 
 ```html
-<script src="bower_components/setImmediate/setimmediate.js"></script>
-<script src="bower_components/promise-polyfill/Promise.js"></script>
+<script src="bower_components/core.js/shim.js"></script>
 <script src="bower_components/mscrypto-adapter/mscrypto-adapter.js"></script>
 ```
 
