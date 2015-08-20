@@ -27,7 +27,10 @@ self.crypto || !function () {
         if ( typeof Promise !== 'function' )
             throw "Promise support required";
 
-        Key.prototype.__defineGetter__( 'usages', function () {
+        if ( typeof CryptoKey === 'undefined' )
+            self.CryptoKey = Key;
+
+        CryptoKey.prototype.__defineGetter__( 'usages', function () {
             return this.keyUsage || [];
         });
 
