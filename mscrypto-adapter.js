@@ -56,10 +56,20 @@ self.crypto || !function () {
                             a.tag = c.slice( c.byteLength - tl );
                         }
 
-                        if ( m === 'importKey' && a === 'jwk' && b.kty ) {
-                            b = JSON.stringify(b);
-                            b = unescape( encodeURIComponent(b) );
-                            arguments[1] = s2b(b).buffer;
+                        if ( m === 'importKey' && a === 'jwk' ) {
+                            if ( b instanceof ArrayBuffer ) b = new Uint8Array(b);
+                            if ( b instanceof Uint8Array ) b = JSON.parse( decodeURIComponent( escape( b2s(b) ) ) );
+
+                            var jwk = { kty: b.kty, alg: b.alg, extractable: b.ext };
+                            switch ( jwk.kty ) {
+                                case 'oct':
+                                    jwk.k = b.k;
+                                case 'RSA':
+                                    [ 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi' ].forEach( function ( x ) { if ( x in b ) jwk[x] = b[x] } );
+                                    break;
+                            }
+
+                            arguments[1] = s2b( unescape( encodeURIComponent( JSON.stringify(jwk) ) ) ).buffer;
                         }
 
                         var op = fn.apply( this, arguments );
@@ -78,9 +88,19 @@ self.crypto || !function () {
                                 }
 
                                 if ( m === 'exportKey' && a === 'jwk' ) {
-                                    r = b2s(r);
-                                    r = decodeURIComponent( escape( r ) );
-                                    r = JSON.parse(r);
+                                    r = JSON.parse( decodeURIComponent( escape( b2s(r) ) ) );
+
+                                    var jwk = { kty: r.kty, alg: r.alg, ext: r.extractable };
+                                    switch ( jwk.kty ) {
+                                        case 'oct':
+                                            jwk.k = r.k;
+                                            break;
+                                        case 'RSA':
+                                            [ 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi' ].forEach( function ( x ) { if ( x in r ) jwk[x] = r[x] } );
+                                            break;
+                                    }
+
+                                    r = jwk;
                                 }
 
                                 res(r);
