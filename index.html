@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <script src="bower_components/core.js/shim.js"></script>
+        <script src="bower_components/core.js/client/shim.js"></script>
         <script src="bower_components/jasmine-standalone/jasmine-standalone.js"></script>
         <script src="mscrypto-adapter.js"></script>
     </head>
@@ -84,10 +84,10 @@
                     expect( window.crypto.subtle ).toBeTruthy();
                 });
 
-                describe( 'SHA-1', function () {
+                xdescribe( 'SHA-1', function () {
                     var alg = 'SHA-1';
 
-                    it( 'of empty ArrayBuffer', function ( done ) {
+                    xit( 'of empty ArrayBuffer', function ( done ) {
                         crypto.subtle.digest( alg, new ArrayBuffer )
                             .then( function ( res ) {
                                 expect( b2hs(res) ).toBe('da39a3ee5e6b4b0d3255bfef95601890afd80709');
@@ -96,7 +96,7 @@
                             .then(done);
                     });
 
-                    it( 'of empty Uint8Array', function ( done ) {
+                    xit( 'of empty Uint8Array', function ( done ) {
                         crypto.subtle.digest( alg, new Uint8Array )
                             .then( function ( res ) {
                                 expect( b2hs(res) ).toBe('da39a3ee5e6b4b0d3255bfef95601890afd80709');
@@ -127,7 +127,7 @@
                 describe( 'SHA-256', function () {
                     var alg = 'SHA-256';
 
-                    it( 'of empty ArrayBuffer', function ( done ) {
+                    xit( 'of empty ArrayBuffer', function ( done ) {
                         crypto.subtle.digest( alg, new ArrayBuffer )
                             .then( function ( res ) {
                                 expect( b2hs(res) ).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
@@ -136,7 +136,7 @@
                             .then(done);
                     });
 
-                    it( 'of empty Uint8Array', function ( done ) {
+                    xit( 'of empty Uint8Array', function ( done ) {
                         crypto.subtle.digest( alg, new Uint8Array )
                             .then( function ( res ) {
                                 expect( b2hs(res) ).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
@@ -158,6 +158,123 @@
                         crypto.subtle.digest( alg, s2b("Hello World!") )
                             .then( function ( res ) {
                                 expect( b2hs(res) ).toBe('7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+                });
+
+                describe( 'SHA-384', function () {
+                    var alg = 'SHA-384';
+
+                    xit( 'of empty ArrayBuffer', function ( done ) {
+                        crypto.subtle.digest( alg, new ArrayBuffer )
+                            .then( function ( res ) {
+                                expect( b2hs(res) ).toBe('...');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    xit( 'of empty Uint8Array', function ( done ) {
+                        crypto.subtle.digest( alg, new Uint8Array )
+                            .then( function ( res ) {
+                                expect( b2hs(res) ).toBe('...');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'of "Hello World!" ArrayBuffer', function ( done ) {
+                        crypto.subtle.digest( alg, s2b("Hello World!").buffer )
+                            .then( function ( res ) {
+                                expect( b2hs(res) ).toBe('bfd76c0ebbd006fee583410547c1887b0292be76d582d96c242d2a792723e3fd6fd061f9d5cfd13b8f961358e6adba4a');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'of "Hello World!" Uint8Array', function ( done ) {
+                        crypto.subtle.digest( alg, s2b("Hello World!") )
+                            .then( function ( res ) {
+                                expect( b2hs(res) ).toBe('bfd76c0ebbd006fee583410547c1887b0292be76d582d96c242d2a792723e3fd6fd061f9d5cfd13b8f961358e6adba4a');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+                });
+
+                describe( 'HMAC_SHA-1', function () {
+                    var alg = { name: 'HMAC', hash: 'SHA-1' };
+
+                    it( 'generateKey', function ( done ) {
+                        crypto.subtle.generateKey( alg, true, [ 'sign', 'verify' ] )
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res.type).toBe('secret');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'importKey from ArrayBuffer and then sign an ArrayBuffer and then verify it', function ( done ) {
+                        var secret;
+
+                        crypto.subtle.importKey( 'raw', new ArrayBuffer(7), alg, true, [ 'sign', 'verify' ] )
+                            .then( function ( res ) {
+                                secret = res;
+
+                                expect(secret).toBeDefined();
+                                expect(secret.type).toBe('secret');
+
+                                return crypto.subtle.sign( alg, secret, new ArrayBuffer(3) );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect( b2hs(res) ).toBe('ceda96a7ab5e5703e171081f491ad92f193eb1bf');
+
+                                return crypto.subtle.verify( alg, secret, res, new ArrayBuffer(3) );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBe(true);
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'importKey from Uint8Array and then exportKey', function ( done ) {
+                        crypto.subtle.importKey( 'raw', new Uint8Array(7), alg, true, [ 'sign', 'verify' ] )
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
+                                expect(res.type).toBe('secret');
+
+                                return crypto.subtle.exportKey( 'raw', res );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect( b2hs(res) ).toBe('00000000000000');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    xit( 'importKey from JWK and then exportKey to JWK', function ( done ) {
+                        crypto.subtle.importKey( 'jwk', { kty: 'oct', k: 'AA' }, alg, [ 'sign', 'verify' ] )
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
+                                expect(res.type).toBe('secret');
+
+                                return crypto.subtle.exportKey( 'jwk', res );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res.kty).toBe('oct');
+                                expect(res.k).toBe('AA');
+                                expect(res.alg).toBe('HS1');
                             })
                             .catch(fail)
                             .then(done);
@@ -207,6 +324,7 @@
                         crypto.subtle.importKey( 'raw', new Uint8Array(7), alg, true, [ 'sign', 'verify' ] )
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
 
                                 return crypto.subtle.exportKey( 'raw', res );
@@ -215,6 +333,102 @@
                                 expect(res).toBeDefined();
                                 expect(res instanceof ArrayBuffer).toBe(true);
                                 expect( b2hs(res) ).toBe('00000000000000');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'importKey from JWK and then exportKey to JWK', function ( done ) {
+                        crypto.subtle.importKey( 'jwk', { kty: 'oct', k: 'AA' }, alg, [ 'sign', 'verify' ] )
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
+                                expect(res.type).toBe('secret');
+
+                                return crypto.subtle.exportKey( 'jwk', res );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res.kty).toBe('oct');
+                                expect(res.k).toBe('AA');
+                                expect(res.alg).toBe('HS256');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+                });
+
+                describe( 'HMAC_SHA-384', function () {
+                    var alg = { name: 'HMAC', hash: 'SHA-384' };
+
+                    it( 'generateKey', function ( done ) {
+                        crypto.subtle.generateKey( alg, true, [ 'sign', 'verify' ] )
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res.type).toBe('secret');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'importKey from ArrayBuffer and then sign an ArrayBuffer and then verify it', function ( done ) {
+                        var secret;
+
+                        crypto.subtle.importKey( 'raw', new ArrayBuffer(7), alg, true, [ 'sign', 'verify' ] )
+                            .then( function ( res ) {
+                                secret = res;
+
+                                expect(secret).toBeDefined();
+                                expect(secret.type).toBe('secret');
+
+                                return crypto.subtle.sign( alg, secret, new ArrayBuffer(3) );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect( b2hs(res) ).toBe('3a72e878e1876290d82174c3fdcd877ce9c0f4c19e00c136058e6986e4545eb640ac10cbadfebdf45e3474a02c60060c');
+
+                                return crypto.subtle.verify( alg, secret, res, new ArrayBuffer(3) );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBe(true);
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'importKey from Uint8Array and then exportKey', function ( done ) {
+                        crypto.subtle.importKey( 'raw', new Uint8Array(7), alg, true, [ 'sign', 'verify' ] )
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
+                                expect(res.type).toBe('secret');
+
+                                return crypto.subtle.exportKey( 'raw', res );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect( b2hs(res) ).toBe('00000000000000');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'importKey from JWK and then exportKey to JWK', function ( done ) {
+                        crypto.subtle.importKey( 'jwk', { kty: 'oct', k: 'AA' }, alg, [ 'sign', 'verify' ] )
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
+                                expect(res.type).toBe('secret');
+
+                                return crypto.subtle.exportKey( 'jwk', res );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res.kty).toBe('oct');
+                                expect(res.k).toBe('AA');
+                                expect(res.alg).toBe('HS384');
                             })
                             .catch(fail)
                             .then(done);
@@ -353,7 +567,55 @@
                     });
                 });
 
-                describe( 'PBKDF2_SHA-1', function () {
+                describe( 'RSA-OAEP_SHA-256', function () {
+                    var alg = { name: 'RSA-OAEP', hash: 'SHA-256', modulusLength: 2048, publicExponent: hs2b('10001') };
+                    var keyPair;
+
+                    var genKeyPairComplete = crypto.subtle.generateKey( alg, true, [ 'encrypt', 'decrypt' ] )
+                            .then( function ( res ) {
+                                keyPair = res;
+                            });
+
+                    it( "generateKey", function ( done ) {
+                        genKeyPairComplete
+                            .then( function () {
+                                expect(keyPair).toBeDefined();
+                                expect(keyPair.publicKey).toBeDefined();
+                                expect(keyPair.publicKey.type).toBe('public');
+                                expect(keyPair.privateKey).toBeDefined();
+                                expect(keyPair.privateKey.type).toBe('private');
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'encrypt and then decrypt', function ( done ) {
+                        genKeyPairComplete
+                            .then ( function () {
+                                return crypto.subtle.encrypt( alg, keyPair.publicKey, s2b('test') );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect( res instanceof ArrayBuffer ).toBe(true);
+                                expect( res.byteLength ).toBe(256);
+                                return res;
+                            })
+                            .then ( function ( res ) {
+                                return crypto.subtle.decrypt( alg, keyPair.privateKey, res );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect( res instanceof ArrayBuffer ).toBe(true);
+                                expect( res.byteLength ).toBe(4);
+                                expect( b2s(res) ).toBe('test');
+                                return res;
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+                });
+
+                xdescribe( 'PBKDF2_SHA-1', function () {
                     var alg = { name: 'PBKDF2', hash: 'SHA-1', salt: s2b('the salty salt'), iterations: 4096 };
                     var password;
 
@@ -384,7 +646,7 @@
                     });
                 });
 
-                describe( 'PBKDF2_SHA-256', function () {
+                xdescribe( 'PBKDF2_SHA-256', function () {
                     var alg = { name: 'PBKDF2', hash: 'SHA-256', salt: s2b('the salty salt'), iterations: 4096 };
                     var password;
 
