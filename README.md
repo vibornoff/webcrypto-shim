@@ -15,28 +15,68 @@ $ bower install mscrypto-adapter
 add add scripts into your html code
 
 ```html
-<script src="bower_components/core.js/shim.js"></script>
+<script src="bower_components/promiz/promiz.js"></script>
 <script src="bower_components/mscrypto-adapter/mscrypto-adapter.js"></script>
 ```
 
 Now you can access [Web Crypto API](www.w3.org/TR/WebCryptoAPI/) through the `window.crypto` object.
 
-Bugs and Limitations
---------------------
+Also you can replace _promiz.js_ with any _Promise/A+_-compatible `Promise` implementation.
 
- * **Crypto operation on an empty buffer never returns result**.
+Supported algorithms & operations
+---------------------------------
 
- * No *SHA-1* support for `digest`, though [Doc claims](https://msdn.microsoft.com/en-us/library/dn302338(v=vs.85).aspx) it should work.
+* _SHA-256_, _SHA-384_: `digest`
 
- * *RSA* `modulusLength` must be either one of: _1024_, _2048_, _4096_ bits.
+  * _empty input isn't allowed and causes an error_
 
- * *RSA* `publicExponent` must be either one of: _3_, _65537_.
+  * _SHA-1_ isn't supported, though [doc claims](https://msdn.microsoft.com/en-us/library/dn302338(v=vs.85).aspx) it should work
 
- * *AES-GCM* `iv` length must be exactly _96_ bits (_12_ octets).
+* _HMAC_ (with hash: _SHA-1_, _SHA-256_, _SHA-384_): `sign`, `verify`, `generateKey`, `importKey`, `exportKey`
 
- * Seems `keyUsage` is completely ignored.
+  * _empty input isn't allowed and causes an error_
+
+  * importing `"jwk"` key for _HMAC\_SHA-1_ fails
+
+  * `generateKey` ignores `"length"` parameter, generated key is always of the same length as _HMAC_ output
+
+* _AES-CBC_: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
+
+  * _empty input isn't allowed and causes an error_
+
+* _AES-GCM_: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
+
+  * _empty input isn't allowed and causes an error_
+
+  * `iv` parameter length must be exactly _96_ bits (_12_ octets)
+
+* _AES-KW_: `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
+
+  * _empty input isn't allowed and causes an error_
+
+  * wrapped content length is required to be a multiple of _64_ bits (_8_ octets)
+
+  * **TODO** tests
+
+* _RSA-OAEP_ (with hash/MGF1: _SHA-1_, _SHA-256_, _SHA-384_): `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
+
+  * _empty input isn't allowed and causes an error_
+
+  * **TODO** tests
+
+* _RSASSA-PKCS1-v1\_5_ (with hash: _SHA-1_, _SHA-256_, _SHA-384_): `sign`, `verify`, `generateKey`, `importKey`, `exportKey`
+
+  * _empty input isn't allowed and causes an error_
+
+  * **TODO** tests
+
+* _RSAES-PKCS1-v1\_5_ (with hash: _SHA-1_, _SHA-256_, _SHA-384_): `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
+
+  * _empty input isn't allowed and causes an error_
+
+  * **TODO** tests
 
 Other browsers support
 ----------------------
 
-https://diafygi.github.io/webcrypto-examples/
+See (https://vibornoff.github.io/mscrypto-adapter/webcrypto-examples/)

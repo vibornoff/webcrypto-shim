@@ -3,8 +3,11 @@
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <script src="bower_components/core.js/client/shim.js"></script>
-        <script src="bower_components/jasmine-standalone/jasmine-standalone.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.3.4/jasmine.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.3.4/jasmine.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.3.4/jasmine-html.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.3.4/boot.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/promiz/1.0.4/promiz.js"></script>
         <script src="mscrypto-adapter.js"></script>
     </head>
     <body>
@@ -472,7 +475,7 @@
                             .then(done);
                     });
 
-                    it( "encrypt and then decrypt", function ( done ) {
+                    it( "encrypt / decrypt", function ( done ) {
                         genKeyComplete
                             .then( function () {
                                 return crypto.subtle.encrypt( extend( alg, { iv: new Uint8Array(16) } ), key, new Uint8Array(16) )
@@ -491,6 +494,38 @@
                             })
                             .catch(fail)
                             .then(done);
+                    });
+
+                    it( 'wrapKey / unwrapKey', function ( done ) {
+                        var keyAlg = { name: 'AES-CBC', length: 128 };
+                            wrapAlg = { name: 'AES-CBC', length: 128 };
+
+                        var wrapParam = extend( wrapAlg, { iv: new Uint8Array(16) } );
+
+                        Promise.all([
+                            crypto.subtle.generateKey( keyAlg, true, [ 'encrypt' ] ),
+                            crypto.subtle.generateKey( wrapAlg, false, [ 'decrypt', 'wrapKey', 'unwrapKey' ] )
+                        ])
+                        .then( function ( keys ) {
+                            return crypto.subtle
+                                .wrapKey( 'raw', keys[0], keys[1], wrapParam )
+                                .then( function ( wrap ) {
+                                    return Promise.all([
+                                        crypto.subtle.exportKey( 'raw', keys[0] ),
+                                        crypto.subtle.decrypt( wrapParam, keys[1], wrap ),
+                                        crypto.subtle.unwrapKey( 'raw', wrap, keys[1], wrapParam, keyAlg, true, [ 'encrypt' ] )
+                                            .then( function ( res ) {
+                                                return crypto.subtle.exportKey( 'raw', res );
+                                            }),
+                                    ]);
+                                })
+                        })
+                        .then( function ( res ) {
+                            expect(res[0]).toEqual(res[1]);
+                            expect(res[0]).toEqual(res[2]);
+                        })
+                        .catch(fail)
+                        .then(done);
                     });
                 });
 

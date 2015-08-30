@@ -73,12 +73,6 @@ self.crypto || !function () {
                 var fn = _subtle[m];
                 _subtle[m] = function ( a, b, c ) {
                     try {
-                        if ( m === 'decrypt' && a.name.toUpperCase() === 'AES-GCM' ) {
-                            var tl = a.tagLength >> 3;
-                            arguments[2] = c.slice( 0, c.byteLength - tl ),
-                            a.tag = c.slice( c.byteLength - tl );
-                        }
-
                         var keyAlg, keyUse;
                         switch ( m ) {
                             case 'generateKey':
@@ -96,10 +90,15 @@ self.crypto || !function () {
                                 break;
                         }
 
+                        if ( m === 'decrypt' && a.name.toUpperCase() === 'AES-GCM' ) {
+                            var tl = a.tagLength >> 3;
+                            arguments[2] = c.slice( 0, c.byteLength - tl ),
+                            a.tag = c.slice( c.byteLength - tl );
+                        }
+
                         if ( m === 'importKey' && a === 'jwk' ) {
                             if ( b instanceof ArrayBuffer ) b = new Uint8Array(b);
                             if ( b instanceof Uint8Array ) b = JSON.parse( decodeURIComponent( escape( b2s(b) ) ) );
-
                             var jwk = { kty: b.kty, alg: b.alg, extractable: b.ext };
                             switch ( jwk.kty ) {
                                 case 'oct':
@@ -108,7 +107,6 @@ self.crypto || !function () {
                                     [ 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi', 'oth' ].forEach( function ( x ) { if ( x in b ) jwk[x] = b[x] } );
                                     break;
                             }
-
                             arguments[1] = s2b( unescape( encodeURIComponent( JSON.stringify(jwk) ) ) ).buffer;
                         }
 
@@ -129,7 +127,6 @@ self.crypto || !function () {
 
                                 if ( m === 'exportKey' && a === 'jwk' ) {
                                     r = JSON.parse( decodeURIComponent( escape( b2s(r) ) ) );
-
                                     var jwk = { kty: r.kty, alg: r.alg, ext: r.extractable };
                                     switch ( jwk.kty ) {
                                         case 'oct':
@@ -139,7 +136,6 @@ self.crypto || !function () {
                                             [ 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi', 'oth' ].forEach( function ( x ) { if ( x in r ) jwk[x] = r[x] } );
                                             break;
                                     }
-
                                     r = jwk;
                                 }
 

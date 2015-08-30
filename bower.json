@@ -31,9 +31,9 @@
     "bower_components"
   ],
   "dependencies": {
-    "core.js": "~1.1.0"
+    "promiz": "~1.0.4"
   },
   "devDependencies": {
-    "jasmine-standalone": "~2.3.2"
+    "jasmine": "latest"
   }
 }
