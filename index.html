@@ -10,15 +10,17 @@
     <body>
         <script>
             function s2b ( s ) {
-                s = unescape( encodeURIComponent(s) );
                 var b = new Uint8Array(s.length);
-                for ( var i = 0; i < s.length; i++ ) {
-                    b[i] = s.charCodeAt(i);
-                }
+                for ( var i = 0; i < s.length; i++ ) b[i] = s.charCodeAt(i);
                 return b;
             }
 
-            function hs2b ( s ) {
+            function b2s ( b ) {
+                if ( b instanceof ArrayBuffer ) b = new Uint8Array(b);
+                return String.fromCharCode.apply( String, b );
+            }
+
+            function x2b ( s ) {
                 if ( s.length % 2 ) s = '0'+s;
                 var b = new Uint8Array(s.length/2);
                 for ( var i = 0; i < s.length; i += 2 ) {
@@ -27,15 +29,7 @@
                 return b;
             }
 
-            function b2s ( ab ) {
-                var b = new Uint8Array(ab), s = '';
-                for ( var i = 0; i < b.length; i++ ) {
-                    s += String.fromCharCode( b[i] );
-                }
-                return decodeURIComponent( escape(s) );
-            }
-
-            function b2hs ( ab ) {
+            function b2x ( ab ) {
                 var b = new Uint8Array(ab), s = '';
                 for ( var i = 0; i < b.length; i++ ) {
                     var h = b[i].toString(16);
@@ -52,29 +46,41 @@
                 return r;
             }
 
+            function normalizeAlg ( a ) {
+                if ( typeof a === 'string' ) a = { name: a };
+                if ( typeof a.hash === 'string' ) a.hash = { name: a.hash };
+                var r = {};
+                for ( var p in a ) r[p] = a[p];
+                r.name = r.name.toUpperCase();
+                if ( r.hash ) r.hash = { name: r.hash.name.toUpperCase() };
+                if ( r.publicExponent ) r.publicExponent = new Uint8Array(r.publicExponent);
+                if ( r.iv ) r.iv = new Uint8Array(r.iv);
+                return r;
+            };
+
             describe( 'Util', function () {
                 it( 's2b', function () {
                     expect( s2b('') ).toEqual( new Uint8Array() );
                     expect( s2b('a') ).toEqual( new Uint8Array([97]) );
-                    expect( s2b("\uD83D\uDE80") ).toEqual( new Uint8Array([0xF0,0x9F,0x9A,0x80]) ); // Unicode ROCKET
+                    expect( s2b( unescape( encodeURIComponent("\uD83D\uDE80") ) ) ).toEqual( new Uint8Array([0xF0,0x9F,0x9A,0x80]) ); // Unicode ROCKET
                 });
 
                 it( 'b2s', function () {
                     expect( b2s( new Uint8Array() ) ).toBe('');
-                    expect( b2s(new Uint8Array([97])) ).toBe('a');
-                    expect( b2s(new Uint8Array([0xF0,0x9F,0x9A,0x80])) ).toBe("\uD83D\uDE80"); // Unicode ROCKET
+                    expect( b2s( new Uint8Array([97]) ) ).toBe('a');
+                    expect( decodeURIComponent( escape( b2s( new Uint8Array([0xF0,0x9F,0x9A,0x80]) ) ) ) ).toBe("\uD83D\uDE80"); // Unicode ROCKET
                 });
 
-                it( 'hs2b', function () {
-                    expect( hs2b('') ).toEqual( new Uint8Array() );
-                    expect( hs2b('0') ).toEqual( new Uint8Array(1) );
-                    expect( hs2b('10203') ).toEqual( new Uint8Array([1,2,3]) );
+                it( 'x2b', function () {
+                    expect( x2b('') ).toEqual( new Uint8Array() );
+                    expect( x2b('0') ).toEqual( new Uint8Array(1) );
+                    expect( x2b('10203') ).toEqual( new Uint8Array([1,2,3]) );
                 });
 
-                it( 'b2hs', function () {
-                    expect( b2hs( new ArrayBuffer() ) ).toBe( '' );
-                    expect( b2hs( new Uint8Array(1) ) ).toBe( '00' );
-                    expect( b2hs( new Uint8Array([1,2,3]) ) ).toBe( '010203' );
+                it( 'b2x', function () {
+                    expect( b2x( new ArrayBuffer() ) ).toBe( '' );
+                    expect( b2x( new Uint8Array(1) ) ).toBe( '00' );
+                    expect( b2x( new Uint8Array([1,2,3]) ) ).toBe( '010203' );
                 });
             });
 
@@ -84,53 +90,17 @@
                     expect( window.crypto.subtle ).toBeTruthy();
                 });
 
-                xdescribe( 'SHA-1', function () {
-                    var alg = 'SHA-1';
-
-                    xit( 'of empty ArrayBuffer', function ( done ) {
-                        crypto.subtle.digest( alg, new ArrayBuffer )
-                            .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('da39a3ee5e6b4b0d3255bfef95601890afd80709');
-                            })
-                            .catch(fail)
-                            .then(done);
-                    });
-
-                    xit( 'of empty Uint8Array', function ( done ) {
-                        crypto.subtle.digest( alg, new Uint8Array )
-                            .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('da39a3ee5e6b4b0d3255bfef95601890afd80709');
-                            })
-                            .catch(fail)
-                            .then(done);
-                    });
-
-                    it( 'of "Hello World!" ArrayBuffer', function ( done ) {
-                        crypto.subtle.digest( alg, s2b("Hello World!").buffer )
-                            .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('2ef7bde608ce5404e97d5f042f95f89f1c232871');
-                            })
-                            .catch(fail)
-                            .then(done);
-                    });
-
-                    it( 'of "Hello World!" Uint8Array', function ( done ) {
-                        crypto.subtle.digest( alg, s2b("Hello World!") )
-                            .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('2ef7bde608ce5404e97d5f042f95f89f1c232871');
-                            })
-                            .catch(fail)
-                            .then(done);
-                    });
-                });
-
                 describe( 'SHA-256', function () {
                     var alg = 'SHA-256';
 
+                    it( 'normalized algorithm', function ( ) {
+                        expect( normalizeAlg(alg) ).toEqual( { name: 'SHA-256' } );
+                    });
+
                     xit( 'of empty ArrayBuffer', function ( done ) {
                         crypto.subtle.digest( alg, new ArrayBuffer )
                             .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+                                expect( b2x(res) ).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
                             })
                             .catch(fail)
                             .then(done);
@@ -139,7 +109,7 @@
                     xit( 'of empty Uint8Array', function ( done ) {
                         crypto.subtle.digest( alg, new Uint8Array )
                             .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+                                expect( b2x(res) ).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
                             })
                             .catch(fail)
                             .then(done);
@@ -148,7 +118,7 @@
                     it( 'of "Hello World!" ArrayBuffer', function ( done ) {
                         crypto.subtle.digest( alg, s2b("Hello World!").buffer )
                             .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069');
+                                expect( b2x(res) ).toBe('7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069');
                             })
                             .catch(fail)
                             .then(done);
@@ -157,7 +127,7 @@
                     it( 'of "Hello World!" Uint8Array', function ( done ) {
                         crypto.subtle.digest( alg, s2b("Hello World!") )
                             .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069');
+                                expect( b2x(res) ).toBe('7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069');
                             })
                             .catch(fail)
                             .then(done);
@@ -167,10 +137,14 @@
                 describe( 'SHA-384', function () {
                     var alg = 'SHA-384';
 
+                    it( 'normalized algorithm', function ( ) {
+                        expect( normalizeAlg(alg) ).toEqual( { name: 'SHA-384' } );
+                    });
+
                     xit( 'of empty ArrayBuffer', function ( done ) {
                         crypto.subtle.digest( alg, new ArrayBuffer )
                             .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('...');
+                                expect( b2x(res) ).toBe('...');
                             })
                             .catch(fail)
                             .then(done);
@@ -179,7 +153,7 @@
                     xit( 'of empty Uint8Array', function ( done ) {
                         crypto.subtle.digest( alg, new Uint8Array )
                             .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('...');
+                                expect( b2x(res) ).toBe('...');
                             })
                             .catch(fail)
                             .then(done);
@@ -188,7 +162,7 @@
                     it( 'of "Hello World!" ArrayBuffer', function ( done ) {
                         crypto.subtle.digest( alg, s2b("Hello World!").buffer )
                             .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('bfd76c0ebbd006fee583410547c1887b0292be76d582d96c242d2a792723e3fd6fd061f9d5cfd13b8f961358e6adba4a');
+                                expect( b2x(res) ).toBe('bfd76c0ebbd006fee583410547c1887b0292be76d582d96c242d2a792723e3fd6fd061f9d5cfd13b8f961358e6adba4a');
                             })
                             .catch(fail)
                             .then(done);
@@ -197,7 +171,7 @@
                     it( 'of "Hello World!" Uint8Array', function ( done ) {
                         crypto.subtle.digest( alg, s2b("Hello World!") )
                             .then( function ( res ) {
-                                expect( b2hs(res) ).toBe('bfd76c0ebbd006fee583410547c1887b0292be76d582d96c242d2a792723e3fd6fd061f9d5cfd13b8f961358e6adba4a');
+                                expect( b2x(res) ).toBe('bfd76c0ebbd006fee583410547c1887b0292be76d582d96c242d2a792723e3fd6fd061f9d5cfd13b8f961358e6adba4a');
                             })
                             .catch(fail)
                             .then(done);
@@ -205,13 +179,27 @@
                 });
 
                 describe( 'HMAC_SHA-1', function () {
-                    var alg = { name: 'HMAC', hash: 'SHA-1' };
+                    var alg = { name: 'HMAC', hash: 'SHA-1', length: 56 };
+
+                    it( 'normalized algorithm', function ( ) {
+                        expect( normalizeAlg(alg) ).toEqual( { name: 'HMAC', hash: { name: 'SHA-1' }, length: 56 } );
+                    });
 
                     it( 'generateKey', function ( done ) {
                         crypto.subtle.generateKey( alg, true, [ 'sign', 'verify' ] )
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
+                                return res;
+                            })
+                            .then( function ( res ) {
+                                return crypto.subtle.exportKey( 'raw', res );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
+                                expect(res.byteLength).toBe(7);
                             })
                             .catch(fail)
                             .then(done);
@@ -226,13 +214,14 @@
 
                                 expect(secret).toBeDefined();
                                 expect(secret.type).toBe('secret');
+                                expect(secret.algorithm).toEqual( normalizeAlg(alg) );
 
                                 return crypto.subtle.sign( alg, secret, new ArrayBuffer(3) );
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res instanceof ArrayBuffer).toBe(true);
-                                expect( b2hs(res) ).toBe('ceda96a7ab5e5703e171081f491ad92f193eb1bf');
+                                expect( b2x(res) ).toBe('ceda96a7ab5e5703e171081f491ad92f193eb1bf');
 
                                 return crypto.subtle.verify( alg, secret, res, new ArrayBuffer(3) );
                             })
@@ -249,31 +238,35 @@
                                 expect(res).toBeDefined();
                                 expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
 
                                 return crypto.subtle.exportKey( 'raw', res );
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res instanceof ArrayBuffer).toBe(true);
-                                expect( b2hs(res) ).toBe('00000000000000');
+                                expect( b2x(res) ).toBe('00000000000000');
                             })
                             .catch(fail)
                             .then(done);
                     });
 
                     xit( 'importKey from JWK and then exportKey to JWK', function ( done ) {
-                        crypto.subtle.importKey( 'jwk', { kty: 'oct', k: 'AA' }, alg, [ 'sign', 'verify' ] )
+                        var jwkKey = {"alg":"HS1","ext":true,"k":"AAAAAAAAAA","key_ops":["sign","verify"],"kty":"oct"};
+
+                        crypto.subtle.importKey( 'jwk', jwkKey, alg, true, [ 'sign', 'verify' ] )
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
 
                                 return crypto.subtle.exportKey( 'jwk', res );
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res.kty).toBe('oct');
-                                expect(res.k).toBe('AA');
+                                expect(res.k).toBe('AAAAAAAAAA');
                                 expect(res.alg).toBe('HS1');
                             })
                             .catch(fail)
@@ -282,13 +275,15 @@
                 });
 
                 describe( 'HMAC_SHA-256', function () {
-                    var alg = { name: 'HMAC', hash: 'SHA-256' };
+                    var alg = { name: 'HMAC', hash: 'SHA-256', length: 56 };
 
                     it( 'generateKey', function ( done ) {
                         crypto.subtle.generateKey( alg, true, [ 'sign', 'verify' ] )
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
                             })
                             .catch(fail)
                             .then(done);
@@ -299,17 +294,19 @@
 
                         crypto.subtle.importKey( 'raw', new ArrayBuffer(7), alg, true, [ 'sign', 'verify' ] )
                             .then( function ( res ) {
-                                secret = res;
+                                expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
+                                expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
 
-                                expect(secret).toBeDefined();
-                                expect(secret.type).toBe('secret');
+                                secret = res;
 
                                 return crypto.subtle.sign( alg, secret, new ArrayBuffer(3) );
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res instanceof ArrayBuffer).toBe(true);
-                                expect( b2hs(res) ).toBe('e7655205039eddec669bdc5099863024deef1a609430f10dac5f7889f03bf139');
+                                expect( b2x(res) ).toBe('e7655205039eddec669bdc5099863024deef1a609430f10dac5f7889f03bf139');
 
                                 return crypto.subtle.verify( alg, secret, res, new ArrayBuffer(3) );
                             })
@@ -326,33 +323,35 @@
                                 expect(res).toBeDefined();
                                 expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
 
                                 return crypto.subtle.exportKey( 'raw', res );
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res instanceof ArrayBuffer).toBe(true);
-                                expect( b2hs(res) ).toBe('00000000000000');
+                                expect( b2x(res) ).toBe('00000000000000');
                             })
                             .catch(fail)
                             .then(done);
                     });
 
                     it( 'importKey from JWK and then exportKey to JWK', function ( done ) {
-                        var jwkKey = {"alg":"HS256","ext":true,"k":"AA","key_ops":["sign","verify"],"kty":"oct"};
+                        var jwkKey = {"alg":"HS256","ext":true,"k":"AAAAAAAAAA","key_ops":["sign","verify"],"kty":"oct"};
 
                         crypto.subtle.importKey( 'jwk', jwkKey, alg, true, [ 'sign', 'verify' ] )
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
 
                                 return crypto.subtle.exportKey( 'jwk', res );
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res.kty).toBe('oct');
-                                expect(res.k).toBe('AA');
+                                expect(res.k).toBe('AAAAAAAAAA');
                                 expect(res.alg).toBe('HS256');
                                 expect(res.ext).toBe(true);
                             })
@@ -362,13 +361,15 @@
                 });
 
                 describe( 'HMAC_SHA-384', function () {
-                    var alg = { name: 'HMAC', hash: 'SHA-384' };
+                    var alg = { name: 'HMAC', hash: 'SHA-384', length: 56 };
 
                     it( 'generateKey', function ( done ) {
                         crypto.subtle.generateKey( alg, true, [ 'sign', 'verify' ] )
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
                             })
                             .catch(fail)
                             .then(done);
@@ -379,17 +380,19 @@
 
                         crypto.subtle.importKey( 'raw', new ArrayBuffer(7), alg, true, [ 'sign', 'verify' ] )
                             .then( function ( res ) {
-                                secret = res;
+                                expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
+                                expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
 
-                                expect(secret).toBeDefined();
-                                expect(secret.type).toBe('secret');
+                                secret = res;
 
                                 return crypto.subtle.sign( alg, secret, new ArrayBuffer(3) );
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res instanceof ArrayBuffer).toBe(true);
-                                expect( b2hs(res) ).toBe('3a72e878e1876290d82174c3fdcd877ce9c0f4c19e00c136058e6986e4545eb640ac10cbadfebdf45e3474a02c60060c');
+                                expect( b2x(res) ).toBe('3a72e878e1876290d82174c3fdcd877ce9c0f4c19e00c136058e6986e4545eb640ac10cbadfebdf45e3474a02c60060c');
 
                                 return crypto.subtle.verify( alg, secret, res, new ArrayBuffer(3) );
                             })
@@ -406,13 +409,14 @@
                                 expect(res).toBeDefined();
                                 expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
 
                                 return crypto.subtle.exportKey( 'raw', res );
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res instanceof ArrayBuffer).toBe(true);
-                                expect( b2hs(res) ).toBe('00000000000000');
+                                expect( b2x(res) ).toBe('00000000000000');
                             })
                             .catch(fail)
                             .then(done);
@@ -422,7 +426,7 @@
                         var jwkKey = {
                             "kty":"oct",
                             "alg":"HS384",
-                            "k":"AA",
+                            "k":"AAAAAAAAAA",
                         };
 
                         crypto.subtle.importKey( 'jwk', jwkKey, alg, true, [ 'sign', 'verify' ] )
@@ -430,13 +434,14 @@
                                 expect(res).toBeDefined();
                                 expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
 
                                 return crypto.subtle.exportKey( 'jwk', res );
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
                                 expect(res.kty).toBe('oct');
-                                expect(res.k).toBe('AA');
+                                expect(res.k).toBe('AAAAAAAAAA');
                                 expect(res.alg).toBe('HS384');
                                 expect(res.ext).toBe(true);
                             })
@@ -446,7 +451,7 @@
                 });
 
                 describe( 'AES-CBC' , function () {
-                    var alg = { name: 'AES-CBC', length: 256, tagLength: 128 };
+                    var alg = { name: 'AES-CBC', length: 256 };
                     var key;
 
                     var genKeyComplete = crypto.subtle.generateKey( alg, true, [ 'encrypt', 'decrypt' ] )
@@ -458,8 +463,10 @@
                         genKeyComplete
                             .then( function () {
                                 expect(key).toBeDefined();
+                                expect(key instanceof CryptoKey).toBe(true);
                                 expect(key.type).toBe('secret');
                                 expect(key.extractable).toBe(true);
+                                expect(key.algorithm).toEqual( normalizeAlg(alg) );
                             })
                             .catch(fail)
                             .then(done);
@@ -472,15 +479,15 @@
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
-                                expect( res instanceof ArrayBuffer ).toBe(true);
-                                expect( res.byteLength ).toBe(32);
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res.byteLength).toBe(32);
 
                                 return crypto.subtle.decrypt( extend( alg, { iv: new Uint8Array(16) } ), key, res )
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
-                                expect( res instanceof ArrayBuffer ).toBe(true);
-                                expect( res.byteLength ).toBe(16);
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res.byteLength).toBe(16);
                             })
                             .catch(fail)
                             .then(done);
@@ -488,7 +495,7 @@
                 });
 
                 describe( 'AES-GCM' , function () {
-                    var alg = { name: 'AES-GCM', length: 256, tagLength: 128 };
+                    var alg = { name: 'AES-GCM', length: 256 };
                     var key;
 
                     var genKeyComplete = crypto.subtle.generateKey( alg, true, [ 'encrypt', 'decrypt' ] )
@@ -502,6 +509,7 @@
                                 expect(key).toBeDefined();
                                 expect(key.type).toBe('secret');
                                 expect(key.extractable).toBe(true);
+                                expect(key.algorithm).toEqual( normalizeAlg(alg) );
                             })
                             .catch(fail)
                             .then(done);
@@ -510,19 +518,19 @@
                     it( "encrypt and then decrypt", function ( done ) {
                         genKeyComplete
                             .then( function () {
-                                return crypto.subtle.encrypt( extend( alg, { iv: new Uint8Array(12) } ), key, new Uint8Array(16) )
+                                return crypto.subtle.encrypt( extend( alg, { iv: new Uint8Array(12), tagLength: 128 } ), key, new Uint8Array(16) )
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
-                                expect( res instanceof ArrayBuffer ).toBe(true);
-                                expect( res.byteLength ).toBe(32);
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res.byteLength).toBe(32);
 
-                                return crypto.subtle.decrypt( extend( alg, { iv: new Uint8Array(12) } ), key, res )
+                                return crypto.subtle.decrypt( extend( alg, { iv: new Uint8Array(12), tagLength: 128 } ), key, res )
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
-                                expect( res instanceof ArrayBuffer ).toBe(true);
-                                expect( res.byteLength ).toBe(16);
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res.byteLength).toBe(16);
                             })
                             .catch(fail)
                             .then(done);
@@ -530,10 +538,10 @@
                 });
 
                 describe( 'RSA-OAEP_SHA-1', function () {
-                    var alg = { name: 'RSA-OAEP', hash: 'SHA-1', modulusLength: 1024, publicExponent: hs2b('10001') };
+                    var alg = { name: 'RSA-OAEP', hash: 'SHA-1', modulusLength: 2048, publicExponent: x2b('10001') };
                     var keyPair;
 
-                    var genKeyPairComplete = crypto.subtle.generateKey( alg, true, [ 'encrypt', 'decrypt' ] )
+                    var genKeyPairComplete = crypto.subtle.generateKey( alg, false, [ 'encrypt', 'decrypt' ] )
                             .then( function ( res ) {
                                 keyPair = res;
                             });
@@ -542,10 +550,16 @@
                         genKeyPairComplete
                             .then( function () {
                                 expect(keyPair).toBeDefined();
+
                                 expect(keyPair.publicKey).toBeDefined();
                                 expect(keyPair.publicKey.type).toBe('public');
+                                expect(keyPair.publicKey.extractable).toBe(true);
+                                expect(keyPair.publicKey.algorithm).toEqual( normalizeAlg(alg) );
+
                                 expect(keyPair.privateKey).toBeDefined();
                                 expect(keyPair.privateKey.type).toBe('private');
+                                expect(keyPair.privateKey.extractable).toBe(false);
+                                expect(keyPair.privateKey.algorithm).toEqual( normalizeAlg(alg) );
                             })
                             .catch(fail)
                             .then(done);
@@ -558,8 +572,8 @@
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
-                                expect( res instanceof ArrayBuffer ).toBe(true);
-                                expect( res.byteLength ).toBe(128);
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res.byteLength).toBe(256);
                                 return res;
                             })
                             .then ( function ( res ) {
@@ -567,70 +581,10 @@
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
-                                expect( res instanceof ArrayBuffer ).toBe(true);
-                                expect( res.byteLength ).toBe(4);
+                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res.byteLength).toBe(4);
                                 expect( b2s(res) ).toBe('test');
                                 return res;
-                            })
-                            .catch(fail)
-                            .then(done);
-                    });
-                });
-
-                describe( 'RSA-OAEP_SHA-256', function () {
-                    var alg = { name: 'RSA-OAEP', hash: 'SHA-256', modulusLength: 2048, publicExponent: hs2b('10001') };
-                    var keyPair;
-
-                    var genKeyPairComplete = crypto.subtle.generateKey( alg, true, [ 'encrypt', 'decrypt' ] )
-                            .then( function ( res ) {
-                                keyPair = res;
-                            });
-
-                    it( "generateKey", function ( done ) {
-                        genKeyPairComplete
-                            .then( function () {
-                                expect(keyPair).toBeDefined();
-                                expect(keyPair.publicKey).toBeDefined();
-                                expect(keyPair.publicKey.type).toBe('public');
-                                expect(keyPair.privateKey).toBeDefined();
-                                expect(keyPair.privateKey.type).toBe('private');
-                            })
-                            .catch(fail)
-                            .then(done);
-                    });
-
-                    it( 'encrypt and then decrypt', function ( done ) {
-                        genKeyPairComplete
-                            .then ( function () {
-                                return crypto.subtle.encrypt( alg, keyPair.publicKey, s2b('test') );
-                            })
-                            .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect( res instanceof ArrayBuffer ).toBe(true);
-                                expect( res.byteLength ).toBe(256);
-                                return res;
-                            })
-                            .then ( function ( res ) {
-                                return crypto.subtle.decrypt( alg, keyPair.privateKey, res );
-                            })
-                            .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect( res instanceof ArrayBuffer ).toBe(true);
-                                expect( res.byteLength ).toBe(4);
-                                expect( b2s(res) ).toBe('test');
-                                return res;
-                            })
-                            .catch(fail)
-                            .then(done);
-                    });
-
-                    it( 'exportKey / jwk', function ( done ) {
-                        genKeyPairComplete
-                            .then ( function () {
-                                return crypto.subtle.exportKey( 'jwk', keyPair.privateKey );
-                            })
-                            .then ( function ( res ) {
-                                expect(res).toBeDefined();
                             })
                             .catch(fail)
                             .then(done);
@@ -639,7 +593,7 @@
                     it( 'importKey / jwk', function ( done ) {
                         var jwkKey = {
                             "kty":"RSA",
-                            "alg":"RSA-OAEP-256",
+                            "alg":"RSA-OAEP",
                             "n":"zjqltECmgT1Mo925UoACQssXARROi2PjGktxw6NgPVyG3LiSxY4dxGiP5fDjJykkPx8LKIk6k-71Ut5RlcKJQdwyluB7XjNWkx8om7NZ8337fsS8Yp_DBgXMfVI99t34SI0HzHZ_vA2Ang1eKdUQPK7Kq8mD6swS9UQJFzQfecD7Xb46dw4jtJ2lHC4NLqwmHSu8Xf3Q6efOEf53y24_qTptjA-D-gyn51iFuoEssoNdpWxPMP2ExpXz9-Ly2VwHzabNFjAc-cZuK4Tyc_1l3OPbQ82fDi-iSJodzNbpRCbm-d47ai0gROui4iunL2pwM6vooJZA72oxceZGrFGU-w",
                             "e":"AQAB",
                             "d":"awviK1hLlVYeTAixQ3OSuNz2SecihhQJNALpQGWzdOZsUnG0LbuBFAw6dV6-aftfByyz_AyPTW6CBMvFiXj7CiakU9Cd-N2pGKDZ0Ugdbth8DOdN6duHvb6Q0JQ5-cRqNi6OV8FCuHhBxMinkgs4bGdGaDknsl7PkGQKW_MAS4_Cq1e9vGhRDYBhIzw-umzW54YgVAOHhnFLR9WHohZhWzNAlFHAnSz7lV1N4ixt_VJl24GpcbK9d1dSzHi8Jn5cPu7D8SHHlS0KLofqfIfrMshJ3jX_OHnsYTHFdGF3WO36kC1zQxhDQoXR5ege8Dou5x3Yxx_YBWFJ_7HF2v1t0Q",
@@ -653,68 +607,76 @@
                         crypto.subtle.importKey( 'jwk', jwkKey, alg, true, [ 'decrypt' ] )
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
+                                expect(res instanceof CryptoKey).toBe(true);
+                                expect(res.algorithm).toEqual( normalizeAlg(alg) );
                             })
                             .catch(fail)
                             .then(done);
                     });
                 });
 
-                xdescribe( 'PBKDF2_SHA-1', function () {
-                    var alg = { name: 'PBKDF2', hash: 'SHA-1', salt: s2b('the salty salt'), iterations: 4096 };
-                    var password;
+                describe( 'RSA-OAEP_SHA-256', function () {
+                    var alg = { name: 'RSA-OAEP', hash: 'SHA-256', modulusLength: 2048, publicExponent: x2b('10001') },
+                        spkiPubKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm6Lnc6cNKMWdXDbGKoT9VZCGAP+IFCKMWmQHROvTGPBrQm7NwSaC8CKhsNG12sauM/xv7qzc/OuZ0Qb9hfUBRrchGfSled+iewfD1MWMhNZgOpZHWBEY75xFbW4O3rKGOeimZr4I//WMpVFu2Gbw1POcIPT8g9XNOon+Q1fWR0nXnyupVOJqGTs6+TluAm9sRpXfjN4vDZp9u9tF4lvyEv8PEeJtaKeoAyXh2mEZlHHVSCn238TWe2JZhlhUbSYcZKmISWKQHi+Zf78gPJLa+oSljJKrnPncrX4JLz8QKjnBCa01Mikww6aJbMzFxy6UF4pcnuvnuaa8Qs/U5Q3/vwIDAQAB",
+                        pkcsPrvKey = "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCboudzpw0oxZ1cNsYqhP1VkIYA/4gUIoxaZAdE69MY8GtCbs3BJoLwIqGw0bXaxq4z/G/urNz865nRBv2F9QFGtyEZ9KV536J7B8PUxYyE1mA6lkdYERjvnEVtbg7esoY56KZmvgj/9YylUW7YZvDU85wg9PyD1c06if5DV9ZHSdefK6lU4moZOzr5OW4Cb2xGld+M3i8Nmn2720XiW/IS/w8R4m1op6gDJeHaYRmUcdVIKfbfxNZ7YlmGWFRtJhxkqYhJYpAeL5l/vyA8ktr6hKWMkquc+dytfgkvPxAqOcEJrTUyKTDDpolszMXHLpQXilye6+e5prxCz9TlDf+/AgMBAAECggEBAIytdRQevVBLP2+ouvqX9v0ug1HHp9K7X64cmE198/Oo7OrBiQ27p8MzKn/PLtevmqq21N4iNiYPN5uu+93nld27jhoN/rzonc8jN6nNXrR7qcOLLrW1zppW4JKHVr2JFLanSjG4OB5Ub2rG7rCAa9Ow10Ea8FyiFr2BGej5LmCEP2/Nr1Olf1EdOz9HlZOF+bMewpWL/c4qxGLWMBaSrhflK65EZQCZdHKgnZ831M2UOTsrbRkdg2b+YMhthfGRl6730D93glvfITINWZLuwxnA6kYQMqRdbuOqAo5FKyrS32oZkq3cX+EXxt6iloii5U7L4t3eaNoj/KtpXKSYEeECgYEAzhR8lN9OSJdvTl9PcQMDxpTrlsjCbxCiA74BscfTFn5hwJujC8zEN7+FGKJu6uclCAfGRXrs2t4OFWZ543ugnVZszTS33LaSUw5/aNJ2PTOgv+QJj4U6GpJwNQ+YA+7u2EKeh5xxYyQZup15yAekc84UnOB6PJMSb1RcGonJw/cCgYEAwVZI2mOhyp2DO/OKFKqZWvYFfwR4mNEjk8jJlbU+JwyyPe4Z5AMB3coIRwUDvINF1y9ggKLHCkebm3Nt2I1eAlvzE+IP/6peAv7CkOQXJSSXCuN6wCCz9q+BCBN79t/iDNdNVlFhjgnK4fyz6ySY3xod1TSvTKUIasUhF036oHkCgYEAuQPfjXCmQbnjbkNXeSixvRl6IVeAaGJQcnel4cx7ERjJ/jg8u51NFJfXkHRUjISU1I7WTQ69kwoFLuVfzQHzAw7Sg7Eu2PL4j6TWcm9xRCUTzvOWOcnsjmqmXpzvZ6idun6lAS9NBSsmBkrXSOTDmkyMaQOH+tY3mMfuIM1P3aUCgYBDu6bqW91izqwbZMcLVnlDlM14ImjdoOeF7uIwwL51j80iRThs2WDeAtnDh843TQY6zS5R4rU4tL2fSGFDbMNysCQI4zoXp+gnxHkFqeMx8A+6kNeAV/S0h+f8nFbhtq3LMeK2SuyShnu9kHq39qpX/x5Ug5CmmWrJfSaKs5cKgQKBgGzXgoAjBKkYj44o4RHa1NJRkSHAOGzbzsA63BE1hTu+Tf2GoFK3BrZmxaXHVyMn/gAY8ZK6b8hEO84v0Oh8Cp5rlnnjs/KksaaDdE6JhvPh1xirK7zsi8ZLM6au8VGeSJfdupwmECdT4lwMgkM3N6sVSs0iaBQ9mKmrxBcdd1He",
+                        jwkPubKey = {"alg":"RSA-OAEP-256","e":"AQAB","ext":true,"key_ops":["encrypt"],"kty":"RSA","n":"m6Lnc6cNKMWdXDbGKoT9VZCGAP-IFCKMWmQHROvTGPBrQm7NwSaC8CKhsNG12sauM_xv7qzc_OuZ0Qb9hfUBRrchGfSled-iewfD1MWMhNZgOpZHWBEY75xFbW4O3rKGOeimZr4I__WMpVFu2Gbw1POcIPT8g9XNOon-Q1fWR0nXnyupVOJqGTs6-TluAm9sRpXfjN4vDZp9u9tF4lvyEv8PEeJtaKeoAyXh2mEZlHHVSCn238TWe2JZhlhUbSYcZKmISWKQHi-Zf78gPJLa-oSljJKrnPncrX4JLz8QKjnBCa01Mikww6aJbMzFxy6UF4pcnuvnuaa8Qs_U5Q3_vw"},
+                        jwkPrvKey = {"alg":"RSA-OAEP-256","d":"jK11FB69UEs_b6i6-pf2_S6DUcen0rtfrhyYTX3z86js6sGJDbunwzMqf88u16-aqrbU3iI2Jg83m6773eeV3buOGg3-vOidzyM3qc1etHupw4sutbXOmlbgkodWvYkUtqdKMbg4HlRvasbusIBr07DXQRrwXKIWvYEZ6PkuYIQ_b82vU6V_UR07P0eVk4X5sx7ClYv9zirEYtYwFpKuF-UrrkRlAJl0cqCdnzfUzZQ5OyttGR2DZv5gyG2F8ZGXrvfQP3eCW98hMg1Zku7DGcDqRhAypF1u46oCjkUrKtLfahmSrdxf4RfG3qKWiKLlTsvi3d5o2iP8q2lcpJgR4Q","dp":"uQPfjXCmQbnjbkNXeSixvRl6IVeAaGJQcnel4cx7ERjJ_jg8u51NFJfXkHRUjISU1I7WTQ69kwoFLuVfzQHzAw7Sg7Eu2PL4j6TWcm9xRCUTzvOWOcnsjmqmXpzvZ6idun6lAS9NBSsmBkrXSOTDmkyMaQOH-tY3mMfuIM1P3aU","dq":"Q7um6lvdYs6sG2THC1Z5Q5TNeCJo3aDnhe7iMMC-dY_NIkU4bNlg3gLZw4fON00GOs0uUeK1OLS9n0hhQ2zDcrAkCOM6F6foJ8R5BanjMfAPupDXgFf0tIfn_JxW4batyzHitkrskoZ7vZB6t_aqV_8eVIOQpplqyX0mirOXCoE","e":"AQAB","ext":true,"key_ops":["decrypt"],"kty":"RSA","n":"m6Lnc6cNKMWdXDbGKoT9VZCGAP-IFCKMWmQHROvTGPBrQm7NwSaC8CKhsNG12sauM_xv7qzc_OuZ0Qb9hfUBRrchGfSled-iewfD1MWMhNZgOpZHWBEY75xFbW4O3rKGOeimZr4I__WMpVFu2Gbw1POcIPT8g9XNOon-Q1fWR0nXnyupVOJqGTs6-TluAm9sRpXfjN4vDZp9u9tF4lvyEv8PEeJtaKeoAyXh2mEZlHHVSCn238TWe2JZhlhUbSYcZKmISWKQHi-Zf78gPJLa-oSljJKrnPncrX4JLz8QKjnBCa01Mikww6aJbMzFxy6UF4pcnuvnuaa8Qs_U5Q3_vw","p":"zhR8lN9OSJdvTl9PcQMDxpTrlsjCbxCiA74BscfTFn5hwJujC8zEN7-FGKJu6uclCAfGRXrs2t4OFWZ543ugnVZszTS33LaSUw5_aNJ2PTOgv-QJj4U6GpJwNQ-YA-7u2EKeh5xxYyQZup15yAekc84UnOB6PJMSb1RcGonJw_c","q":"wVZI2mOhyp2DO_OKFKqZWvYFfwR4mNEjk8jJlbU-JwyyPe4Z5AMB3coIRwUDvINF1y9ggKLHCkebm3Nt2I1eAlvzE-IP_6peAv7CkOQXJSSXCuN6wCCz9q-BCBN79t_iDNdNVlFhjgnK4fyz6ySY3xod1TSvTKUIasUhF036oHk","qi":"bNeCgCMEqRiPjijhEdrU0lGRIcA4bNvOwDrcETWFO75N_YagUrcGtmbFpcdXIyf-ABjxkrpvyEQ7zi_Q6HwKnmuWeeOz8qSxpoN0TomG8-HXGKsrvOyLxkszpq7xUZ5Il926nCYQJ1PiXAyCQzc3qxVKzSJoFD2YqavEFx13Ud4"},
+                        encMsg1 = "lJ5oWi3eq9T0JErf3zGGjo3EaABJb/xTuL10cmLGShEVL418x4BRRP7/qmt07KSShm/ZryblVSpfPR1oUOagNhaLN+FT24gIdWBIgHoNF6+/o6y2blnGJypi4DgyoacmFCpZtA08Yhkfepig4681QpdSV5vSLqyjRHapTFQvQgZ8sLD+Mkh5E+umfTy1BDktXQfuzg5s+qcZ+sCl7UGRSR8/7HERLxjsZADmALKLVZ5S1cnCVC4FUagX5OnqAX1AcfGdR93aaB6GKDITfVzzkTuo0I1qk0u7a8LCgLiBTzV6lFARStFQPtj9DokP15w3r62UlM4dQweQxXMU6mkCpw==",
+                        encMsg2 = "dUu67hKWD0m8rPzp1EJeY6VtcJZN+ATC1QHWTjyQWTUsmb5AQxs55FkFNIHWphXTgrjg6V4jFp2fgWdgNvQiJOiUdMURJq/vcR2M1lIbcZcUbPBoVjiQf6dTr1B2ttuel8QorNn58PKEzlYfr/EqA7jkg3J2KuMGBxyGKw8pfCDVqGNTNZcj67nh44wHvz7vTRGcWzys1UcqtfdMMvwX2i4RSZU5IvnvikpLBFdF77nVooemwo1W8/nmZg/uFCO/b307xTKwuiTvRNixUTPHevgl7mlI6rv1jeOOUKEHiC3VNaPc6jQ0VrjqpitfwNpg206WZzGB1cowE8VVM9jkOQ==";
 
-                    var importPasswordComplete = crypto.subtle.importKey( 'raw', s2b('s3cr3t pa55phra53'), alg, false, [ 'deriveBits', 'deriveKey' ] )
-                            .then( function ( res ) {
-                                password = res;
-                            });
+                    var importPkcsPrvKeyComplete = crypto.subtle.importKey( 'pkcs8', s2b( atob(pkcsPrvKey) ), alg, false, [ 'decrypt' ] );
 
-                    it( 'deriveKey', function ( done ) {
-                        importPasswordComplete
-                            .then( function () {
-                                expect(password).toBeDefined();
-                                expect(password instanceof CryptoKey).toBe(true);
-                                expect(password.type).toBe('secret');
-                                expect(password.extractable).toBe(false);
-                            })
-                            .then( function () {
-                                return crypto.subtle.deriveKey( alg, password, { name: 'AES-KW', length: 256 }, false, [ 'wrapKey', 'wrapKey' ] );
-                            })
-                            .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect( res instanceof CryptoKey ).toBe(true);
-                                expect( res.type ).toBe('secret');
-                                expect(password.extractable).toBe(false);
+                    it( 'importKey / spki', function ( done ) {
+                        crypto.subtle.importKey( 'spki', s2b( atob(spkiPubKey) ), alg, true, [ 'encrypt' ] )
+                            .then( function ( pubKey ) {
+                                expect(pubKey).toBeDefined();
+                                expect(pubKey instanceof CryptoKey).toBe(true);
+                                expect(pubKey.type).toBe('public');
+                                expect(pubKey.extractable).toBe(true);
+                                expect(pubKey.usages).toEqual(['encrypt']);
+                                expect(pubKey.algorithm).toEqual( normalizeAlg(alg) );
                             })
                             .catch(fail)
                             .then(done);
                     });
-                });
 
-                xdescribe( 'PBKDF2_SHA-256', function () {
-                    var alg = { name: 'PBKDF2', hash: 'SHA-256', salt: s2b('the salty salt'), iterations: 4096 };
-                    var password;
-
-                    var importPasswordComplete = crypto.subtle.importKey( 'raw', s2b('s3cr3t pa55phra53'), alg, false, [ 'deriveBits', 'deriveKey' ] )
-                            .then( function ( res ) {
-                                password = res;
-                            });
-
-                    it( 'deriveBits', function ( done ) {
-                        importPasswordComplete
-                            .then( function () {
-                                expect(password).toBeDefined();
-                                expect(password instanceof CryptoKey).toBe(true);
-                                expect(password.type).toBe('secret');
-                                expect(password.extractable).toBe(false);
+                    it( 'importKey / pkcs8', function ( done ) {
+                        importPkcsPrvKeyComplete
+                            .then( function ( prvKey ) {
+                                expect(prvKey).toBeDefined();
+                                expect(prvKey instanceof CryptoKey).toBe(true);
+                                expect(prvKey.type).toBe('private');
+                                expect(prvKey.extractable).toBe(false);
+                                expect(prvKey.usages).toEqual(['decrypt']);
+                                expect(prvKey.algorithm).toEqual( normalizeAlg(alg) );
                             })
-                            .then( function () {
-                                return crypto.subtle.deriveBits( alg, password, 8*32 );
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'decrypt / ""', function ( done ) {
+                        importPkcsPrvKeyComplete
+                            .then( function ( prvKey ) {
+                                return crypto.subtle.decrypt( alg, prvKey, s2b( atob(encMsg1) ) )
                             })
-                            .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect( res instanceof ArrayBuffer ).toBe(true);
-                                expect( res.byteLength ).toBe(32);
-                                expect( b2hs(res) ).toBe('7f2c6e2cf0e4d7f7bb38dba02bc3645fe19c83238fa41f51f2e4cc099c0fc0c0');
+                            .then( function ( msg1 ) {
+                                expect(msg1).toBeDefined();
+                                expect(msg1 instanceof ArrayBuffer).toBe(true);
+                                expect(b2s(msg1)).toBe("");
+                            })
+                            .catch(fail)
+                            .then(done);
+                    });
+
+                    it( 'decrypt / "Hello World!"', function ( done ) {
+                        importPkcsPrvKeyComplete
+                            .then( function ( prvKey ) {
+                                return crypto.subtle.decrypt( alg, prvKey, s2b( atob(encMsg2) ) );
+                            })
+                            .then( function ( msg2 ) {
+                                expect(msg2).toBeDefined();
+                                expect(msg2 instanceof ArrayBuffer).toBe(true);
+                                expect(b2s(msg2)).toBe("Hello World!");
                             })
                             .catch(fail)
                             .then(done);

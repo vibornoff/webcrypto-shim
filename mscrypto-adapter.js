@@ -30,10 +30,6 @@ self.crypto || !function () {
         if ( typeof CryptoKey === 'undefined' )
             self.CryptoKey = Key;
 
-        CryptoKey.prototype.__defineGetter__( 'usages', function () {
-            return this.keyUsage || [];
-        });
-
         function s2b ( s ) {
             var b = new Uint8Array(s.length);
             for ( var i = 0; i < s.length; i++ ) b[i] = s.charCodeAt(i);
@@ -45,7 +41,34 @@ self.crypto || !function () {
             return String.fromCharCode.apply( String, b );
         }
 
-        [ 'decrypt', 'deriveBits', 'deriveKey', 'digest', 'encrypt', 'exportKey', 'generateKey' ,'importKey', 'sign', 'unwrapKey', 'verify', 'wrapKey' ]
+        function alg ( a ) {
+            var r = { name: (a.name || a || '').toUpperCase() };
+            switch ( r.name ) {
+                case 'SHA-1':
+                case 'SHA-256':
+                case 'SHA-384':
+                    break;
+                case 'AES-CBC':
+                case 'AES-GCM':
+                case 'AES-KW':
+                    r.length = a.length;
+                    break;
+                case 'HMAC':
+                    r.hash = alg(a.hash);
+                    if ( a.length ) r.length = a.length;
+                    break;
+                case 'RSA-OAEP':
+                    r.hash = alg(a.hash);
+                    if ( a.publicExponent ) r.publicExponent = new Uint8Array(a.publicExponent);
+                    if ( a.modulusLength ) r.modulusLength = a.modulusLength;
+                    break;
+                default:
+                    throw new SyntaxError("Bad algorithm name");
+            }
+            return r;
+        };
+
+        [ 'decrypt', 'deriveBits', 'deriveKey', 'digest', 'encrypt', 'exportKey', 'generateKey' ,'importKey', 'sign', 'verify' ]
             .forEach( function ( m ) {
                 var fn = _subtle[m];
                 _subtle[m] = function ( a, b, c ) {
@@ -54,6 +77,23 @@ self.crypto || !function () {
                             var tl = a.tagLength >> 3;
                             arguments[2] = c.slice( 0, c.byteLength - tl ),
                             a.tag = c.slice( c.byteLength - tl );
+                        }
+
+                        var keyAlg, keyUse;
+                        switch ( m ) {
+                            case 'generateKey':
+                                keyAlg = alg(a);
+                                keyUse = c;
+                                break;
+                            case 'importKey':
+                            case 'deriveKey':
+                                keyAlg = alg(c);
+                                keyUse = arguments[4];
+                                break;
+                            case 'unwrapKey':
+                                keyAlg = alg( arguments[4] );
+                                keyUse = arguments[6];
+                                break;
                         }
 
                         if ( m === 'importKey' && a === 'jwk' ) {
@@ -65,7 +105,7 @@ self.crypto || !function () {
                                 case 'oct':
                                     jwk.k = b.k;
                                 case 'RSA':
-                                    [ 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi' ].forEach( function ( x ) { if ( x in b ) jwk[x] = b[x] } );
+                                    [ 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi', 'oth' ].forEach( function ( x ) { if ( x in b ) jwk[x] = b[x] } );
                                     break;
                             }
 
@@ -96,11 +136,24 @@ self.crypto || !function () {
                                             jwk.k = r.k;
                                             break;
                                         case 'RSA':
-                                            [ 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi' ].forEach( function ( x ) { if ( x in r ) jwk[x] = r[x] } );
+                                            [ 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi', 'oth' ].forEach( function ( x ) { if ( x in r ) jwk[x] = r[x] } );
                                             break;
                                     }
 
                                     r = jwk;
+                                }
+
+                                if ( keyAlg ) {
+                                    if ( r.publicKey && r.privateKey ) {
+                                        r.publicKey.__defineGetter__( 'algorithm', function () { return keyAlg } );
+                                        r.publicKey.__defineGetter__( 'usages', function () { return keyAlg } );
+                                        r.privateKey.__defineGetter__( 'algorithm', function () { return keyAlg } );
+                                        r.privateKey.__defineGetter__( 'usages', function () { return keyUse } );
+                                    }
+                                    else {
+                                        r.__defineGetter__( 'algorithm', function () { return keyAlg } );
+                                        r.__defineGetter__( 'usages', function () { return keyUse } );
+                                    }
                                 }
 
                                 res(r);
