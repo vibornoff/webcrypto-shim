@@ -57,6 +57,8 @@ self.crypto || !function () {
                     r.hash = alg(a.hash);
                     if ( a.length ) r.length = a.length;
                     break;
+                case 'RSASSA-PKCS1-V1_5':
+                case 'RSAES-PKCS1-V1_5':
                 case 'RSA-OAEP':
                     r.hash = alg(a.hash);
                     if ( a.publicExponent ) r.publicExponent = new Uint8Array(a.publicExponent);
