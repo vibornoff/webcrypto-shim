@@ -1,7 +1,7 @@
 mscrypto-adapter.js
 ===================
 
-Web Cryptography API adapter
+Web Cryptography API adapter for _Internet Explorer 11_
 
 Quick start with Bower
 ----------------------
@@ -38,11 +38,11 @@ Supported algorithms & operations
 
   * importing `"jwk"` key for _HMAC\_SHA-1_ fails
 
-  * `generateKey` ignores `"length"` parameter, generated key is always of the same length as _HMAC_ output
-
 * _AES-CBC_: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
 
   * _empty input isn't allowed and causes an error_
+
+  * **TODO** `wrapKey`, `unwrapKey` are not yet implemented
 
 * _AES-GCM_: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
 
@@ -50,17 +50,23 @@ Supported algorithms & operations
 
   * `iv` parameter length must be exactly _96_ bits (_12_ octets)
 
+  * **TODO** `wrapKey`, `unwrapKey` are not yet implemented
+
 * _AES-KW_: `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
 
   * _empty input isn't allowed and causes an error_
 
   * wrapped content length is required to be a multiple of _64_ bits (_8_ octets)
 
+  * **TODO** `wrapKey`, `unwrapKey` are not yet implemented
+
   * **TODO** tests
 
 * _RSA-OAEP_ (with hash/MGF1: _SHA-1_, _SHA-256_, _SHA-384_): `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
 
   * _empty input isn't allowed and causes an error_
+
+  * **TODO** `wrapKey`, `unwrapKey` are not yet implemented
 
   * **TODO** tests
 
@@ -74,7 +80,14 @@ Supported algorithms & operations
 
   * _empty input isn't allowed and causes an error_
 
+  * **TODO** `wrapKey`, `unwrapKey` are not yet implemented
+
   * **TODO** tests
+
+Known limitations
+-----------------
+
+`deriveKey`, `deriveBits` are not supported since there is no algorithm providing key derivation operation.
 
 Other browsers support
 ----------------------
