@@ -21,7 +21,7 @@ add add scripts into your html code
 
 Now you can access [Web Crypto API](www.w3.org/TR/WebCryptoAPI/) through the `window.crypto` object.
 
-Also you can replace _promiz.js_ with any _Promise/A+_-compatible `Promise` implementation.
+Also you can replace _promiz.js_ with any _Promise/A+_-compatible implementation.
 
 Supported algorithms & operations
 ---------------------------------
@@ -71,4 +71,4 @@ Known limitations
 Other browsers support
 ----------------------
 
-See (https://vibornoff.github.io/mscrypto-adapter/webcrypto-examples/)
+See https://vibornoff.github.io/mscrypto-adapter/webcrypto-examples/
