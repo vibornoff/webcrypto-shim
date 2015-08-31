@@ -57,7 +57,6 @@
                 r.name = r.name.toUpperCase();
                 if ( r.hash ) r.hash = { name: r.hash.name.toUpperCase() };
                 if ( r.publicExponent ) r.publicExponent = new Uint8Array(r.publicExponent);
-                if ( r.iv ) r.iv = new Uint8Array(r.iv);
                 return r;
             };
 
@@ -89,8 +88,8 @@
 
             describe( 'window.crypto.subtle', function () {
                 it( 'supported', function () {
-                    expect( window.crypto ).toBeTruthy();
-                    expect( window.crypto.subtle ).toBeTruthy();
+                    expect(window.crypto).toEqual(jasmine.any(Crypto));
+                    expect(window.crypto.subtle).toEqual(jasmine.any(SubtleCrypto));
                 });
 
                 describe( 'SHA-256', function () {
@@ -200,7 +199,6 @@
                                 return crypto.subtle.exportKey( 'raw', res );
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
                                 expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect(res.byteLength).toBe(7);
                             })
@@ -222,8 +220,7 @@
                                 return crypto.subtle.sign( alg, secret, new ArrayBuffer(3) );
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect( b2x(res) ).toBe('ceda96a7ab5e5703e171081f491ad92f193eb1bf');
 
                                 return crypto.subtle.verify( alg, secret, res, new ArrayBuffer(3) );
@@ -246,8 +243,7 @@
                                 return crypto.subtle.exportKey( 'raw', res );
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect( b2x(res) ).toBe('00000000000000');
                             })
                             .catch(fail)
@@ -287,6 +283,15 @@
                                 expect(res instanceof CryptoKey).toBe(true);
                                 expect(res.type).toBe('secret');
                                 expect(res.algorithm).toEqual( normalizeAlg(alg) );
+                                return res;
+                            })
+                            .then( function ( res ) {
+                                return crypto.subtle.exportKey( 'raw', res );
+                            })
+                            .then( function ( res ) {
+                                expect(res).toBeDefined();
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
+                                expect(res.byteLength).toBe(7);
                             })
                             .catch(fail)
                             .then(done);
@@ -307,8 +312,7 @@
                                 return crypto.subtle.sign( alg, secret, new ArrayBuffer(3) );
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect( b2x(res) ).toBe('e7655205039eddec669bdc5099863024deef1a609430f10dac5f7889f03bf139');
 
                                 return crypto.subtle.verify( alg, secret, res, new ArrayBuffer(3) );
@@ -331,8 +335,7 @@
                                 return crypto.subtle.exportKey( 'raw', res );
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect( b2x(res) ).toBe('00000000000000');
                             })
                             .catch(fail)
@@ -393,8 +396,7 @@
                                 return crypto.subtle.sign( alg, secret, new ArrayBuffer(3) );
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect( b2x(res) ).toBe('3a72e878e1876290d82174c3fdcd877ce9c0f4c19e00c136058e6986e4545eb640ac10cbadfebdf45e3474a02c60060c');
 
                                 return crypto.subtle.verify( alg, secret, res, new ArrayBuffer(3) );
@@ -417,8 +419,7 @@
                                 return crypto.subtle.exportKey( 'raw', res );
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect( b2x(res) ).toBe('00000000000000');
                             })
                             .catch(fail)
@@ -481,15 +482,13 @@
                                 return crypto.subtle.encrypt( extend( alg, { iv: new Uint8Array(16) } ), key, new Uint8Array(16) )
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect(res.byteLength).toBe(32);
 
                                 return crypto.subtle.decrypt( extend( alg, { iv: new Uint8Array(16) } ), key, res )
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect(res.byteLength).toBe(16);
                             })
                             .catch(fail)
@@ -556,15 +555,13 @@
                                 return crypto.subtle.encrypt( extend( alg, { iv: new Uint8Array(12), tagLength: 128 } ), key, new Uint8Array(16) )
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect(res.byteLength).toBe(32);
 
                                 return crypto.subtle.decrypt( extend( alg, { iv: new Uint8Array(12), tagLength: 128 } ), key, res )
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect(res.byteLength).toBe(16);
                             })
                             .catch(fail)
@@ -607,7 +604,7 @@
                             })
                             .then( function ( res ) {
                                 expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect(res.byteLength).toBe(256);
                                 return res;
                             })
@@ -615,8 +612,7 @@
                                 return crypto.subtle.decrypt( alg, keyPair.privateKey, res );
                             })
                             .then( function ( res ) {
-                                expect(res).toBeDefined();
-                                expect(res instanceof ArrayBuffer).toBe(true);
+                                expect(res).toEqual(jasmine.any(ArrayBuffer));
                                 expect(res.byteLength).toBe(4);
                                 expect( b2s(res) ).toBe('test');
                                 return res;
@@ -689,14 +685,13 @@
                             .then(done);
                     });
 
-                    it( 'decrypt / ""', function ( done ) {
+                    xit( 'decrypt / ""', function ( done ) {
                         importPkcsPrvKeyComplete
                             .then( function ( prvKey ) {
                                 return crypto.subtle.decrypt( alg, prvKey, s2b( atob(encMsg1) ) )
                             })
                             .then( function ( msg1 ) {
-                                expect(msg1).toBeDefined();
-                                expect(msg1 instanceof ArrayBuffer).toBe(true);
+                                expect(msg1).toEqual(jasmine.any(ArrayBuffer));
                                 expect(b2s(msg1)).toBe("");
                             })
                             .catch(fail)
@@ -709,8 +704,7 @@
                                 return crypto.subtle.decrypt( alg, prvKey, s2b( atob(encMsg2) ) );
                             })
                             .then( function ( msg2 ) {
-                                expect(msg2).toBeDefined();
-                                expect(msg2 instanceof ArrayBuffer).toBe(true);
+                                expect(msg2).toEqual(jasmine.any(ArrayBuffer));
                                 expect(b2s(msg2)).toBe("Hello World!");
                             })
                             .catch(fail)
