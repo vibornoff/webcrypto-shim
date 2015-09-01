@@ -71,4 +71,4 @@ Known limitations
 Other browsers support
 ----------------------
 
-See https://vibornoff.github.io/mscrypto-adapter/webcrypto-examples/
+See https://vibornoff.github.io/webcrypto-examples/index.html
