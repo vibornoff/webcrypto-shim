@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <script src="bower_components/core.js/client/shim.js"></script>
+        <script src="mscrypto-adapter.js"></script>
+    </head>
+    <body>
+        <script>
+            function s2b ( s ) {
+                var b = new Uint8Array(s.length);
+                for ( var i = 0; i < s.length; i++ ) b[i] = s.charCodeAt(i);
+                return b;
+            }
+
+            function b2s ( b ) {
+                if ( b instanceof ArrayBuffer ) b = new Uint8Array(b);
+                var s = '';
+                for ( var i = 0; i < b.length; i++ ) s += String.fromCharCode( b[i] );
+                return s;
+            }
+
+            /**
+             * RSA-OAEP_SHA-1
+             */
+
+            var rsaOaepAlg1 = { name: 'RSA-OAEP', hash: 'SHA-1', modulusLength: 2048, publicExponent: s2b("\x01\x00\x01") };
+
+            crypto.subtle
+                .generateKey( rsaOaepAlg1, true, [ 'encrypt', 'decrypt' ] )
+                .then( function ( keyPair ) {
+                    crypto.subtle.exportKey( 'spki', keyPair.publicKey )
+                        .then( function ( pubKey ) {
+                            document.write( "<code>var rsa_oaep_sha1_spki_pub = '" + btoa( b2s(pubKey) ) + "';</code></p>\n" );
+                        });
+
+                    crypto.subtle.exportKey( 'pkcs8', keyPair.privateKey )
+                        .then( function ( prvKey ) {
+                            document.write( "<code>var rsa_oaep_sha1_pkcs8_prv = '" + btoa( b2s(prvKey) ) + "';</code></p>\n" );
+                        });
+
+                    crypto.subtle.exportKey( 'jwk', keyPair.publicKey )
+                        .then( function ( jwkPubKey ) {
+                            document.write( "<p><code>var rsa_oaep_sha1_jwk_pub = " + JSON.stringify(jwkPubKey) + ";</code></p>\n" );
+                        });
+
+                    crypto.subtle.exportKey( 'jwk', keyPair.privateKey )
+                        .then( function ( jwkPrvKey ) {
+                            document.write( "<p><code>var rsa_oaep_sha1_jwk_prv = " + JSON.stringify(jwkPrvKey) + ";</code></p>\n" );
+                        });
+
+                    crypto.subtle.encrypt( rsaOaepAlg1, keyPair.publicKey, new Uint8Array(0) )
+                        .then( function ( ciphertext ) {
+                            document.write( "<p><code>var rsa_oaep_sha1_ciphertext_empty = '" + btoa( b2s(ciphertext) ) + "';</code></p>\n" );
+                        });
+
+                    crypto.subtle.encrypt( rsaOaepAlg1, keyPair.publicKey, s2b("Hello World!") )
+                        .then( function ( ciphertext ) {
+                            document.write( "<p><code>var rsa_oaep_sha1_ciphertext_hello = '" + btoa( b2s(ciphertext) ) + "';</code></p>\n" );
+                        });
+                });
+
+            /**
+             * RSA-OAEP_SHA-256
+             */
+
+            var rsaOaepAlg2 = { name: 'RSA-OAEP', hash: 'SHA-256', modulusLength: 2048, publicExponent: s2b("\x01\x00\x01") };
+
+            crypto.subtle
+                .generateKey( rsaOaepAlg2, true, [ 'encrypt', 'decrypt' ] )
+                .then( function ( keyPair ) {
+                    crypto.subtle.exportKey( 'spki', keyPair.publicKey )
+                        .then( function ( pubKey ) {
+                            document.write( "<code>var rsa_oaep_sha256_spki_pub = '" + btoa( b2s(pubKey) ) + "';</code>\n" );
+                        });
+
+                    crypto.subtle.exportKey( 'pkcs8', keyPair.privateKey )
+                        .then( function ( prvKey ) {
+                            document.write( "<code>var rsa_oaep_sha256_pkcs8_prv = '" + btoa( b2s(prvKey) ) + "';</code>\n" );
+                        });
+
+                    crypto.subtle.exportKey( 'jwk', keyPair.publicKey )
+                        .then( function ( jwkPubKey ) {
+                            document.write( "<code>var rsa_oaep_sha256_jwk_pub = " + JSON.stringify(jwkPubKey) + ";</code>\n" );
+                        });
+
+                    crypto.subtle.exportKey( 'jwk', keyPair.privateKey )
+                        .then( function ( jwkPrvKey ) {
+                            document.write( "<code>var rsa_oaep_sha256_jwk_prv = " + JSON.stringify(jwkPrvKey) + ";</code>\n" );
+                        });
+
+                    crypto.subtle.encrypt( rsaOaepAlg2, keyPair.publicKey, new Uint8Array(0) )
+                        .then( function ( ciphertext ) {
+                            document.write( "<p><code>var rsa_oaep_sha256_ciphertext_empty = '" + btoa( b2s(ciphertext) ) + "'; // encrypted empty message</code></p>\n" );
+                        });
+
+                    crypto.subtle.encrypt( rsaOaepAlg2, keyPair.publicKey, s2b("Hello World!") )
+                        .then( function ( ciphertext ) {
+                            document.write( "<p><code>var rsa_oaep_sha256_ciphertext_hello = '" + btoa( b2s(ciphertext) ) + "'; // encrypted 'Hello World!' message</code></p>\n" );
+                        });
+                });
+        </script>
+    </body>
+</html>

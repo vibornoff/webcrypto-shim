@@ -520,8 +520,8 @@
                                 })
                         })
                         .then( function ( res ) {
-                            expect(res[0]).toEqual(res[1]);
-                            expect(res[0]).toEqual(res[2]);
+                            expect( new Uint8Array( res[0] ) ).toEqual( new Uint8Array( res[1] ) );
+                            expect( new Uint8Array( res[0] ) ).toEqual( new Uint8Array( res[2] ) );
                         })
                         .catch(fail)
                         .then(done);
