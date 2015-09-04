@@ -6,20 +6,17 @@
 
 'use strict';
 
-self.crypto || !function () {
-    var IE = !!self.msCrypto;
-
-    var _crypto = self.msCrypto;
+!function () {
+    var _crypto = self.crypto || self.msCrypto;
     if ( !_crypto ) return;
 
-    var _subtle = _crypto.subtle;
+    var _subtle = _crypto.subtle || _crypto.webkitSubtle;
     if ( !_subtle ) return;
 
     if ( typeof Promise !== 'function' )
         throw "Promise support required";
 
-    if ( typeof CryptoKey === 'undefined' )
-        self.CryptoKey = Key;
+    var isIE = !!self.msCrypto, isWebkit = !!_crypto.webkitSubtle;
 
     function s2b ( s ) {
         var b = new Uint8Array(s.length);
@@ -78,136 +75,158 @@ self.crypto || !function () {
 
     function jwk2b ( k ) {
         var jwk = b2jwk(k);
-        if ( IE ) jwk['extractable'] = jwk.ext, delete jwk.ext;
+        if ( isIE ) jwk['extractable'] = jwk.ext, delete jwk.ext;
         return s2b( unescape( encodeURIComponent( JSON.stringify(jwk) ) ) ).buffer;
     }
 
     function fixKey ( k, a, u ) {
-        k.__defineGetter__( 'algorithm', function () { return a } );
-        k.__defineGetter__( 'usages', function () { return u } );
+        k.__defineGetter__( 'algorithm', function ( ) { return a } );
+        k.__defineGetter__( 'usages', function ( ) { return u } );
         return k;
     }
 
-    [ 'generateKey', 'importKey', 'exportKey' ]
-        .forEach( function ( m ) {
-            var _fn = _subtle[m];
+    if ( isIE || isWebkit ) {
+        [ 'generateKey', 'importKey', 'exportKey' ]
+            .forEach( function ( m ) {
+                var _fn = _subtle[m];
 
-            _subtle[m] = function ( a, b, c ) {
-                var args = [].slice.call(arguments),
-                    ka, ku;
+                _subtle[m] = function ( a, b, c ) {
+                    var args = [].slice.call(arguments),
+                        ka, ku;
 
-                switch ( m ) {
-                    case 'generateKey':
-                        ka = alg(a);
-                        ku = c;
-                        break;
-                    case 'importKey':
-                    //case 'deriveKey':
-                        ka = alg(c);
-                        ku = args[4];
-                        if ( a === 'jwk' ) args[1] = jwk2b(b);
-                        break;
-                }
+                    switch ( m ) {
+                        case 'generateKey':
+                            ka = alg(a);
+                            ku = c;
+                            break;
+                        case 'importKey':
+                        //case 'deriveKey':
+                            ka = alg(c);
+                            ku = args[4];
+                            if ( a === 'jwk' ) args[1] = jwk2b(b);
+                            break;
+                    }
 
-                if ( m === 'generateKey' && ka.name === 'HMAC' && ka.length ) {
-                    return _subtle.importKey( 'raw', _crypto.getRandomValues( new Uint8Array( (ka.length+7)>>3 ) ), a, b, c );
-                }
+                    if ( m === 'generateKey' && ka.name === 'HMAC' && ka.length ) {
+                        return _subtle.importKey( 'raw', _crypto.getRandomValues( new Uint8Array( (ka.length+7)>>3 ) ), a, b, c );
+                    }
 
-                return new Promise(
-                    function ( res, rej ) {
-                        try {
-                            var op = _fn.apply( _subtle, args );
+                    var op;
+                    try {
+                        op = _fn.apply( _subtle, args );
+                    }
+                    catch ( e ) {
+                        return Promise.reject(e);
+                    }
 
+                    if ( isIE ) {
+                        op = new Promise( function ( res, rej ) {
                             op.onabort =
-                            op.onerror = function ( e ) {
-                                rej(e);
-                            };
+                            op.onerror = function ( e ) { rej(e) };
+                            op.oncomplete = function ( r ) { res(r.target.result) };
+                        });
+                    }
 
-                            op.oncomplete = function ( r ) {
-                                var r = r.target.result;
-
-                                if ( m === 'exportKey' && a === 'jwk' ) {
-                                    r = b2jwk(r);
-                                }
-
-                                if ( IE ) {
-                                    if ( r.publicKey && r.privateKey ) {
-                                        fixKey( r.publicKey, ka, ku );
-                                        fixKey( r.privateKey, ka, ku );
-                                    }
-                                    else {
-                                        fixKey( r, ka, ku );
-                                    }
-                                }
-
-                                res(r);
-                            };
+                    if ( m === 'exportKey' ) {
+                        if ( a === 'jwk' ) {
+                            op = op.then( function ( k ) {
+                                return b2jwk(k);
+                            });
                         }
-                        catch ( e ) {
-                            rej(e);
-                        }
-                    });
-            }
-        });
+                    }
+                    else {
+                        op = op.then( function ( k ) {
+                            if ( k.publicKey && k.privateKey ) {
+                                fixKey( k.publicKey, ka, ku );
+                                fixKey( k.privateKey, ka, ku );
+                            }
+                            else {
+                                if ( ka.name === 'HMAC' ) {
+                                    ka.length = ka.length || 8 * k.algorithm.length;
+                                }
+                                fixKey( k, ka, ku );
+                            }
+                            return k;
+                        });
+                    }
 
-    [ 'digest', 'encrypt', 'decrypt', 'sign', 'verify' ]
-        .forEach( function ( m ) {
-            var _fn = _subtle[m];
-
-            _subtle[m] = function ( a, b, c ) {
-                var args = [].slice.call(arguments);
-
-                if ( m === 'decrypt' && a.name.toUpperCase() === 'AES-GCM' ) {
-                    var tl = a.tagLength >> 3;
-                    args[2] = (c.buffer || c).slice( 0, c.byteLength - tl ),
-                    a.tag = (c.buffer || c).slice( c.byteLength - tl );
+                    return op;
                 }
+            });
+    }
 
-                return new Promise(
-                    function ( res, rej ) {
-                        try {
-                            var op = _fn.apply( _subtle, args );
+    if ( isIE ) {
+        [ 'digest', 'encrypt', 'decrypt', 'sign', 'verify' ]
+            .forEach( function ( m ) {
+                var _fn = _subtle[m];
 
-                            op.onabort =
-                            op.onerror = function ( e ) {
-                                rej(e);
-                            };
+                _subtle[m] = function ( a, b, c ) {
+                    var args = [].slice.call(arguments);
 
-                            op.oncomplete = function ( r ) {
-                                var r = r.target.result;
+                    if ( m === 'decrypt' && a.name.toUpperCase() === 'AES-GCM' ) {
+                        var tl = a.tagLength >> 3;
+                        args[2] = (c.buffer || c).slice( 0, c.byteLength - tl ),
+                        a.tag = (c.buffer || c).slice( c.byteLength - tl );
+                    }
 
-                                if ( m === 'encrypt' && r instanceof AesGcmEncryptResult ) {
-                                    var c = r.ciphertext, t = r.tag;
-                                    r = new Uint8Array( c.byteLength + t.byteLength );
-                                    r.set( new Uint8Array(c), 0 );
-                                    r.set( new Uint8Array(t), c.byteLength );
-                                    r = r.buffer;
-                                }
+                    var op;
+                    try {
+                        op = _fn.apply( _subtle, args );
+                    }
+                    catch ( e ) {
+                        return Promise.reject(e);
+                    }
 
-                                res(r);
-                            };
-                        }
-                        catch ( e ) {
+                    op = new Promise( function ( res, rej ) {
+                        op.onabort =
+                        op.onerror = function ( e ) {
                             rej(e);
-                        }
+                        };
+
+                        op.oncomplete = function ( r ) {
+                            var r = r.target.result;
+
+                            if ( m === 'encrypt' && r instanceof AesGcmEncryptResult ) {
+                                var c = r.ciphertext, t = r.tag;
+                                r = new Uint8Array( c.byteLength + t.byteLength );
+                                r.set( new Uint8Array(c), 0 );
+                                r.set( new Uint8Array(t), c.byteLength );
+                                r = r.buffer;
+                            }
+
+                            res(r);
+                        };
                     });
-            }
-        });
 
-    _subtle['wrapKey'] = function ( a, b, c, d ) {
-        return _subtle.exportKey( a, b )
-            .then( function ( k ) {
-                if ( a === 'jwk' ) k = s2b( unescape( encodeURIComponent( JSON.stringify( b2jwk(k) ) ) ) ).buffer
-                return  _subtle.encrypt( d, c, k );
+                    return op;
+                }
             });
-    };
 
-    _subtle['unwrapKey'] = function ( a, b, c, d, e, f, g ) {
-        return _subtle.decrypt( d, c, b )
-            .then( function ( k ) {
-                return _subtle.importKey( a, k, e, f, g );
-            });
-    };
+        _subtle['wrapKey'] = function ( a, b, c, d ) {
+            return _subtle.exportKey( a, b )
+                .then( function ( k ) {
+                    if ( a === 'jwk' ) k = s2b( unescape( encodeURIComponent( JSON.stringify( b2jwk(k) ) ) ) ).buffer
+                    return  _subtle.encrypt( d, c, k );
+                });
+        };
 
-    self.crypto = Object.create( _crypto, { subtle: { value: _subtle } } );
+        _subtle['unwrapKey'] = function ( a, b, c, d, e, f, g ) {
+            return _subtle.decrypt( d, c, b )
+                .then( function ( k ) {
+                    return _subtle.importKey( a, k, e, f, g );
+                });
+        };
+
+        self.crypto = Object.create( _crypto, { subtle: { value: _subtle } } );
+
+        self.CryptoKey = self.Key;
+    }
+
+    if ( isWebkit ) {
+        _crypto.subtle = _subtle;
+
+        self.Crypto = Object;
+        self.SubtleCrypto = Object;
+        self.CryptoKey = Object;
+    }
 }();
