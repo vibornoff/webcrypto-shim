@@ -1,22 +1,25 @@
 /**
- * @file Web Cryptography API adapter
+ * @file Web Cryptography API shim
  * @author Artem S Vybornov <vybornov@gmail.com>
  * @license MIT
  */
+!function ( global ) {
+    'use strict';
 
-'use strict';
+    if ( typeof Promise !== 'function' )
+        throw "Promise support required";
 
-!function () {
-    var _crypto = self.crypto || self.msCrypto;
+    var _crypto = global.crypto || global.msCrypto;
     if ( !_crypto ) return;
 
     var _subtle = _crypto.subtle || _crypto.webkitSubtle;
     if ( !_subtle ) return;
 
-    if ( typeof Promise !== 'function' )
-        throw "Promise support required";
+    var _Crypto     = global.Crypto || _crypto.constructor || Object,
+        _SubtleCrypto = global.SubtleCrypto || _subtle.constructor || Object,
+        _CryptoKey  = global.CryptoKey || global.Key || Object;
 
-    var isIE = !!self.msCrypto, isWebkit = !!_crypto.webkitSubtle;
+    var isIE = !!global.msCrypto, isWebkit = !!_crypto.webkitSubtle;
 
     function s2b ( s ) {
         var b = new Uint8Array(s.length);
@@ -47,6 +50,7 @@
                 break;
             case 'RSASSA-PKCS1-V1_5':
             case 'RSAES-PKCS1-V1_5':
+                r['name'] = r.name.replace('V','v');
             case 'RSA-OAEP':
                 r['hash'] = alg(a.hash);
                 if ( a.publicExponent ) r['publicExponent'] = new Uint8Array(a.publicExponent);
@@ -79,10 +83,28 @@
         return s2b( unescape( encodeURIComponent( JSON.stringify(jwk) ) ) ).buffer;
     }
 
-    function fixKey ( k, a, u ) {
-        k.__defineGetter__( 'algorithm', function ( ) { return a } );
-        k.__defineGetter__( 'usages', function ( ) { return u } );
-        return k;
+    function CryptoKey ( key, alg, use ) {
+        Object.defineProperties( this, {
+            _key: {
+                value: key
+            },
+            type: {
+                value: key.type,
+                enumerable: true,
+            },
+            extractable: {
+                value: key.extractable,
+                enumerable: true,
+            },
+            algorithm: {
+                value: alg,
+                enumerable: true,
+            },
+            usages: {
+                value: use,
+                enumerable: true,
+            },
+        });
     }
 
     if ( isIE || isWebkit ) {
@@ -104,6 +126,9 @@
                             ka = alg(c);
                             ku = args[4];
                             if ( a === 'jwk' ) args[1] = jwk2b(b);
+                            break;
+                        case 'exportKey':
+                            args[1] = b._key;
                             break;
                     }
 
@@ -137,14 +162,16 @@
                     else {
                         op = op.then( function ( k ) {
                             if ( k.publicKey && k.privateKey ) {
-                                fixKey( k.publicKey, ka, ku );
-                                fixKey( k.privateKey, ka, ku );
+                                k = {
+                                    publicKey: new CryptoKey( k.publicKey, ka, ku ),
+                                    privateKey: new CryptoKey( k.privateKey, ka, ku ),
+                                };
                             }
                             else {
                                 if ( ka.name === 'HMAC' ) {
                                     ka.length = ka.length || 8 * k.algorithm.length;
                                 }
-                                fixKey( k, ka, ku );
+                                k = new CryptoKey( k, ka, ku );
                             }
                             return k;
                         });
@@ -155,7 +182,7 @@
             });
     }
 
-    if ( isIE ) {
+    if ( isIE || isWebkit ) {
         [ 'digest', 'encrypt', 'decrypt', 'sign', 'verify' ]
             .forEach( function ( m ) {
                 var _fn = _subtle[m];
@@ -169,6 +196,10 @@
                         a.tag = (c.buffer || c).slice( c.byteLength - tl );
                     }
 
+                    if ( m !== 'digest' ) {
+                        args[1] = b._key;
+                    }
+
                     var op;
                     try {
                         op = _fn.apply( _subtle, args );
@@ -177,31 +208,35 @@
                         return Promise.reject(e);
                     }
 
-                    op = new Promise( function ( res, rej ) {
-                        op.onabort =
-                        op.onerror = function ( e ) {
-                            rej(e);
-                        };
+                    if ( isIE ) {
+                        op = new Promise( function ( res, rej ) {
+                            op.onabort =
+                            op.onerror = function ( e ) {
+                                rej(e);
+                            };
 
-                        op.oncomplete = function ( r ) {
-                            var r = r.target.result;
+                            op.oncomplete = function ( r ) {
+                                var r = r.target.result;
 
-                            if ( m === 'encrypt' && r instanceof AesGcmEncryptResult ) {
-                                var c = r.ciphertext, t = r.tag;
-                                r = new Uint8Array( c.byteLength + t.byteLength );
-                                r.set( new Uint8Array(c), 0 );
-                                r.set( new Uint8Array(t), c.byteLength );
-                                r = r.buffer;
-                            }
+                                if ( m === 'encrypt' && r instanceof AesGcmEncryptResult ) {
+                                    var c = r.ciphertext, t = r.tag;
+                                    r = new Uint8Array( c.byteLength + t.byteLength );
+                                    r.set( new Uint8Array(c), 0 );
+                                    r.set( new Uint8Array(t), c.byteLength );
+                                    r = r.buffer;
+                                }
 
-                            res(r);
-                        };
-                    });
+                                res(r);
+                            };
+                        });
+                    }
 
                     return op;
                 }
             });
+    }
 
+    if ( isIE ) {
         _subtle['wrapKey'] = function ( a, b, c, d ) {
             return _subtle.exportKey( a, b )
                 .then( function ( k ) {
@@ -217,16 +252,16 @@
                 });
         };
 
-        self.crypto = Object.create( _crypto, { subtle: { value: _subtle } } );
+        global.crypto = Object.create( _crypto, { subtle: { value: _subtle } } );
 
-        self.CryptoKey = self.Key;
+        global.CryptoKey = global.Key;
     }
 
     if ( isWebkit ) {
         _crypto.subtle = _subtle;
 
-        self.Crypto = Object;
-        self.SubtleCrypto = Object;
-        self.CryptoKey = Object;
+        global.Crypto = _Crypto;
+        global.SubtleCrypto = _SubtleCrypto;
+        global.CryptoKey = CryptoKey;
     }
-}();
+}(this);
