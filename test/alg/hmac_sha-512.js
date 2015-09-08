@@ -123,6 +123,9 @@ describe( 'HMAC_SHA-512', function () {
             { comment: "verify-only",
               key: "verify-only",
               use: [ 'verify' ] },
+            { comment: "512-bit key",
+              key: "0123456789abcdefghijklmnopqrstuv0123456789abcdefghijklmnopqrstuv",
+              use: [ 'verify' ] },
         ];
 
         vectors.forEach( function ( v ) {
@@ -184,6 +187,9 @@ describe( 'HMAC_SHA-512', function () {
               use: [ 'sign' ] },
             { comment: "verify-only",
               key: "verify-only",
+              use: [ 'verify' ] },
+            { comment: "512-bit key",
+              key: "0123456789abcdefghijklmnopqrstuv0123456789abcdefghijklmnopqrstuv",
               use: [ 'verify' ] },
         ];
 

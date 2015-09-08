@@ -19,7 +19,8 @@
         _SubtleCrypto = global.SubtleCrypto || _subtle.constructor || Object,
         _CryptoKey  = global.CryptoKey || global.Key || Object;
 
-    var isIE = !!global.msCrypto, isWebkit = !!_crypto.webkitSubtle;
+    var isIE    = !!global.msCrypto,
+        isWebkit = !!_crypto.webkitSubtle;
 
     function s2b ( s ) {
         var b = new Uint8Array(s.length);
@@ -122,18 +123,20 @@
                             ku = c;
                             break;
                         case 'importKey':
-                        //case 'deriveKey':
                             ka = alg(c);
                             ku = args[4];
                             if ( a === 'jwk' ) args[1] = jwk2b(b);
                             break;
                         case 'exportKey':
                             args[1] = b._key;
+                            ka = b.algorithm;
+                            ku = b.usages;
                             break;
                     }
 
-                    if ( m === 'generateKey' && ka.name === 'HMAC' && ka.length ) {
-                        return _subtle.importKey( 'raw', _crypto.getRandomValues( new Uint8Array( (ka.length+7)>>3 ) ), a, b, c );
+                    if ( m === 'generateKey' && ka.name === 'HMAC' ) {
+                        ka.length = ka.length || { 'SHA-1': 512, 'SHA-256': 512, 'SHA-384': 1024, 'SHA-512': 1024 }[ka.hash.name];
+                        return _subtle.importKey( 'raw', _crypto.getRandomValues( new Uint8Array( (ka.length+7)>>3 ) ), ka, b, c );
                     }
 
                     var op;
@@ -155,7 +158,9 @@
                     if ( m === 'exportKey' ) {
                         if ( a === 'jwk' ) {
                             op = op.then( function ( k ) {
-                                return b2jwk(k);
+                                k = b2jwk(k);
+                                if ( !k.key_ops ) k.key_ops = ku.slice();
+                                return k;
                             });
                         }
                     }
@@ -254,7 +259,7 @@
 
         global.crypto = Object.create( _crypto, { subtle: { value: _subtle } } );
 
-        global.CryptoKey = global.Key;
+        global.CryptoKey = CryptoKey;
     }
 
     if ( isWebkit ) {

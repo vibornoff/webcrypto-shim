@@ -123,6 +123,9 @@ describe( 'HMAC_SHA-1', function () {
             { comment: "verify-only",
               key: "verify-only",
               use: [ 'verify' ] },
+            { comment: "160-bit key",
+              key: "0123456789abcdefghij",
+              use: [ 'verify' ] },
         ];
 
         vectors.forEach( function ( v ) {
@@ -184,6 +187,9 @@ describe( 'HMAC_SHA-1', function () {
               use: [ 'sign' ] },
             { comment: "verify-only",
               key: "verify-only",
+              use: [ 'verify' ] },
+            { comment: "160-bit key",
+              key: "0123456789abcdefghij",
               use: [ 'verify' ] },
         ];
 
