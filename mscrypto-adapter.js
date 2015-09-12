@@ -185,7 +185,7 @@
                     return _subtle.importKey( 'raw', _crypto.getRandomValues( new Uint8Array( (ka.length+7)>>3 ) ), ka, b, c );
                 }
 
-                if ( isWebkit && m === 'generateKey' && ka.name === 'RSASSA-PKCS1-v1_5' ) {
+                if ( isWebkit && m === 'generateKey' && ka.name === 'RSASSA-PKCS1-v1_5' && ( !ka.modulusLength || ka.modulusLength >= 2048 ) ) {
                     a = alg(a), a.name = 'RSAES-PKCS1-v1_5', delete a.hash;
                     return _subtle.generateKey( a, true, [ 'encrypt', 'decrypt' ] )
                         .then( function ( k ) {

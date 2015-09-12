@@ -9,7 +9,7 @@ describe( 'RSASSA-PKCS1-v1.5_SHA-256', function () {
     }
 
     describe( "generateKey", function () {
-        [ 512, 1024, 2048, 3072, 4096 ].forEach( function ( modLen ) {
+        [ 1024, 2048, 3072, 4096 ].forEach( function ( modLen ) {
             (skipModLen(modLen) ? xdescribe : describe)( modLen + " bits", function ( done ) {
                 var keyAlg = extend( normalizeAlg(alg), { modulusLength: modLen, publicExponent: x2b('10001') } );
 
