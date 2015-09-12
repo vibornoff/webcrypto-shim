@@ -46,15 +46,15 @@ Supported algorithms & operations
   * wrapped content length is required to be a multiple of _64_ bits (_8_ octets)
   * _TODO_ tests
 
+* **RSASSA-PKCS1-v1\_5** (with hash: **SHA-256**, **SHA-384**): `sign`, `verify`, `generateKey`, `importKey`, `exportKey`
+  * _empty input isn't allowed and causes an error_
+  * only `generateKey` and `exportKey` work with **SHA-1** hash
+
+* **RSAES-PKCS1-v1\_5**: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
+  * _empty input isn't allowed and causes an error_
+  * _TODO_ tests
+
 * **RSA-OAEP** (with hash/MGF1: **SHA-1**, **SHA-256**, **SHA-384**): `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
-  * _empty input isn't allowed and causes an error_
-  * _TODO_ tests
-
-* **RSASSA-PKCS1-v1\_5** (with hash: **SHA-1**, **SHA-256**, **SHA-384**): `sign`, `verify`, `generateKey`, `importKey`, `exportKey`
-  * _empty input isn't allowed and causes an error_
-  * _TODO_ tests
-
-* **RSAES-PKCS1-v1\_5** (with hash: **SHA-1**, **SHA-256**, **SHA-384**): `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
   * _empty input isn't allowed and causes an error_
   * _TODO_ tests
 
