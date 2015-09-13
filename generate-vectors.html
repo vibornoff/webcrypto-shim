@@ -22,6 +22,46 @@
             }
 
             /**
+             * RSASSA-PKCS1-v1.5_SHA-256
+             */
+
+            var rsaSsaAlg2 = { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256', modulusLength: 4096, publicExponent: s2b("\x01\x00\x01") };
+
+            crypto.subtle
+                .generateKey( rsaSsaAlg2, true, [ 'sign', 'verify' ] )
+                .then( function ( keyPair ) {
+                    crypto.subtle.exportKey( 'spki', keyPair.publicKey )
+                        .then( function ( pubKey ) {
+                            document.write( "<p><code>var rsassa_pkcs1_sha256_spki_pub = '" + btoa( b2s(pubKey) ) + "';</code></p>\n" );
+                        });
+
+                    crypto.subtle.exportKey( 'pkcs8', keyPair.privateKey )
+                        .then( function ( prvKey ) {
+                            document.write( "<p><code>var rsassa_pkcs1_sha256_pkcs8_prv = '" + btoa( b2s(prvKey) ) + "';</code></p>\n" );
+                        });
+
+                    crypto.subtle.exportKey( 'jwk', keyPair.publicKey )
+                        .then( function ( jwkPubKey ) {
+                            document.write( "<p><code>var rsassa_pkcs1_sha256_jwk_pub = " + JSON.stringify(jwkPubKey) + ";</code></p>\n" );
+                        });
+
+                    crypto.subtle.exportKey( 'jwk', keyPair.privateKey )
+                        .then( function ( jwkPrvKey ) {
+                            document.write( "<p><code>var rsassa_pkcs1_sha256_jwk_prv = " + JSON.stringify(jwkPrvKey) + ";</code></p>\n" );
+                        });
+
+                    crypto.subtle.sign( rsaSsaAlg2, keyPair.privateKey, new Uint8Array(0) )
+                        .then( function ( signature ) {
+                            document.write( "<p><code>var rsassa_pkcs1_sha256_signature_empty = '" + btoa( b2s(signature) ) + "';</code></p>\n" );
+                        });
+
+                    crypto.subtle.sign( rsaSsaAlg2, keyPair.privateKey, s2b("Hello World!") )
+                        .then( function ( signature ) {
+                            document.write( "<p><code>var rsassa_pkcs1_sha256_signature_hello = '" + btoa( b2s(signature) ) + "';</code></p>\n" );
+                        });
+                });
+
+            /**
              * RSA-OAEP_SHA-1
              */
 
@@ -32,12 +72,12 @@
                 .then( function ( keyPair ) {
                     crypto.subtle.exportKey( 'spki', keyPair.publicKey )
                         .then( function ( pubKey ) {
-                            document.write( "<code>var rsa_oaep_sha1_spki_pub = '" + btoa( b2s(pubKey) ) + "';</code></p>\n" );
+                            document.write( "<p><code>var rsa_oaep_sha1_spki_pub = '" + btoa( b2s(pubKey) ) + "';</code></p>\n" );
                         });
 
                     crypto.subtle.exportKey( 'pkcs8', keyPair.privateKey )
                         .then( function ( prvKey ) {
-                            document.write( "<code>var rsa_oaep_sha1_pkcs8_prv = '" + btoa( b2s(prvKey) ) + "';</code></p>\n" );
+                            document.write( "<p><code>var rsa_oaep_sha1_pkcs8_prv = '" + btoa( b2s(prvKey) ) + "';</code></p>\n" );
                         });
 
                     crypto.subtle.exportKey( 'jwk', keyPair.publicKey )
@@ -72,32 +112,32 @@
                 .then( function ( keyPair ) {
                     crypto.subtle.exportKey( 'spki', keyPair.publicKey )
                         .then( function ( pubKey ) {
-                            document.write( "<code>var rsa_oaep_sha256_spki_pub = '" + btoa( b2s(pubKey) ) + "';</code>\n" );
+                            document.write( "<p><code>var rsa_oaep_sha256_spki_pub = '" + btoa( b2s(pubKey) ) + "';</code></p>\n" );
                         });
 
                     crypto.subtle.exportKey( 'pkcs8', keyPair.privateKey )
                         .then( function ( prvKey ) {
-                            document.write( "<code>var rsa_oaep_sha256_pkcs8_prv = '" + btoa( b2s(prvKey) ) + "';</code>\n" );
+                            document.write( "<p><code>var rsa_oaep_sha256_pkcs8_prv = '" + btoa( b2s(prvKey) ) + "';</code></p>\n" );
                         });
 
                     crypto.subtle.exportKey( 'jwk', keyPair.publicKey )
                         .then( function ( jwkPubKey ) {
-                            document.write( "<code>var rsa_oaep_sha256_jwk_pub = " + JSON.stringify(jwkPubKey) + ";</code>\n" );
+                            document.write( "<p><code>var rsa_oaep_sha256_jwk_pub = " + JSON.stringify(jwkPubKey) + ";</code></p>\n" );
                         });
 
                     crypto.subtle.exportKey( 'jwk', keyPair.privateKey )
                         .then( function ( jwkPrvKey ) {
-                            document.write( "<code>var rsa_oaep_sha256_jwk_prv = " + JSON.stringify(jwkPrvKey) + ";</code>\n" );
+                            document.write( "<p><code>var rsa_oaep_sha256_jwk_prv = " + JSON.stringify(jwkPrvKey) + ";</code></p>\n" );
                         });
 
                     crypto.subtle.encrypt( rsaOaepAlg2, keyPair.publicKey, new Uint8Array(0) )
                         .then( function ( ciphertext ) {
-                            document.write( "<p><code>var rsa_oaep_sha256_ciphertext_empty = '" + btoa( b2s(ciphertext) ) + "'; // encrypted empty message</code></p>\n" );
+                            document.write( "<p><code>var rsa_oaep_sha256_ciphertext_empty = '" + btoa( b2s(ciphertext) ) + "';</code></p>\n" );
                         });
 
                     crypto.subtle.encrypt( rsaOaepAlg2, keyPair.publicKey, s2b("Hello World!") )
                         .then( function ( ciphertext ) {
-                            document.write( "<p><code>var rsa_oaep_sha256_ciphertext_hello = '" + btoa( b2s(ciphertext) ) + "'; // encrypted 'Hello World!' message</code></p>\n" );
+                            document.write( "<p><code>var rsa_oaep_sha256_ciphertext_hello = '" + btoa( b2s(ciphertext) ) + "';</code></p>\n" );
                         });
                 });
         </script>

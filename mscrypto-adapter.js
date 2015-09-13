@@ -44,10 +44,10 @@
             case 'AES-CBC':
             case 'AES-GCM':
             case 'AES-KW':
-                r['length'] = a.length;
+                if ( a.length ) r['length'] = a.length;
                 break;
             case 'HMAC':
-                r['hash'] = alg(a.hash);
+                if ( a.hash ) r['hash'] = alg(a.hash);
                 if ( a.length ) r['length'] = a.length;
                 break;
             case 'RSAES-PKCS1-v1_5':
@@ -56,7 +56,7 @@
                 break;
             case 'RSASSA-PKCS1-v1_5':
             case 'RSA-OAEP':
-                r['hash'] = alg(a.hash);
+                if ( a.hash ) r['hash'] = alg(a.hash);
                 if ( a.publicExponent ) r['publicExponent'] = new Uint8Array(a.publicExponent);
                 if ( a.modulusLength ) r['modulusLength'] = a.modulusLength;
                 break;
@@ -180,7 +180,7 @@
                         break;
                 }
 
-                if ( m === 'generateKey' && ka.name === 'HMAC' ) {
+                if ( m === 'generateKey' && ka.name === 'HMAC' && ka.hash ) {
                     ka.length = ka.length || { 'SHA-1': 512, 'SHA-256': 512, 'SHA-384': 1024, 'SHA-512': 1024 }[ka.hash.name];
                     return _subtle.importKey( 'raw', _crypto.getRandomValues( new Uint8Array( (ka.length+7)>>3 ) ), ka, b, c );
                 }

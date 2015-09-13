@@ -61,7 +61,7 @@ Supported algorithms & operations
 Known limitations
 -----------------
 
-`deriveKey`, `deriveBits` are not supported since there is no algorithm providing key derivation operation.
+`deriveKey`, `deriveBits` are not supported since there is no any algorithm providing key derivation operation.
 
 Other browsers support
 ----------------------
