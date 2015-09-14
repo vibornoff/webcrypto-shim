@@ -1,28 +1,36 @@
 {
-  "name": "mscrypto-adapter",
-  "main": "mscrypto-adapter.js",
-  "version": "0.0.1",
+  "name": "webcrypto-shim",
+  "main": "webcrypto-shim.js",
+  "version": "0.1.0",
   "authors": [
     "Artem S Vybornov <vybornov@gmail.com>"
   ],
-  "description": "Web Cryptography API adapter for Internet Explorer 11",
+  "description": "Web Cryptography API shim for legacy browsers",
   "repository": {
     "type": "git",
-    "url": "git://github.com/vibornoff/mscrypto-adapter.git"
+    "url": "git://github.com/vibornoff/webcrypto-shim.git"
   },
   "moduleType": [
     "globals"
   ],
   "keywords": [
+    "webcrypto",
+    "shim",
     "crypto",
-    "subtle",
     "mscrypto",
+    "webkitcrypto",
+    "mozcrypto",
+    "subtle",
+    "webkitsubtle",
+    "sha",
+    "hmac",
+    "pbkdf",
     "aes",
-    "rsa",
     "cbc",
     "gcm",
-    "adapter",
-    "webcryptoapi"
+    "rsa",
+    "oaep",
+    "pkcs1"
   ],
   "license": "MIT",
   "ignore": [
