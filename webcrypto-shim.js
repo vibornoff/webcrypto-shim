@@ -158,13 +158,13 @@
         return u === 'sign' || u === 'decrypt' || u === 'unwrapKey';
     }
 
-    [ 'generateKey', 'importKey', 'exportKey' ]
+    [ 'generateKey', 'importKey', 'unwrapKey' ]
         .forEach( function ( m ) {
             var _fn = _subtle[m];
 
             _subtle[m] = function ( a, b, c ) {
                 var args = [].slice.call(arguments),
-                    ka, kx, ku;
+                    ka, ku;
 
                 switch ( m ) {
                     case 'generateKey':
@@ -174,9 +174,9 @@
                         ka = alg(c), ku = args[4];
                         if ( a === 'jwk' ) args[1] = jwk2b(b);
                         break;
-                    case 'exportKey':
-                        ka = b.algorithm, ku = b.usages;
-                        args[1] = b._key;
+                    case 'unwrapKey':
+                        ka = args[4], ku = args[6];
+                        args[2] = c._key;
                         break;
                 }
 
@@ -210,6 +210,13 @@
                         });
                 }
 
+                if ( isIE && m === 'unwrapKey' ) {
+                    return _subtle.decrypt( args[3], c._key, b )
+                        .then( function ( k ) {
+                            return _subtle.importKey( a, k, e, f, g );
+                        });
+                }
+
                 var op;
                 try {
                     op = _fn.apply( _subtle, args );
@@ -226,36 +233,77 @@
                     });
                 }
 
-                if ( m === 'exportKey' ) {
-                    if ( a === 'jwk' ) {
-                        op = op.then( function ( k ) {
-                            k = b2jwk(k);
-                            if ( !k.alg ) k.alg = jwkAlg(ka);
-                            if ( !k.key_ops ) k.key_ops = ( b.type === 'public'  ) ? ku.filter(isPubKeyUse)
-                                                        : ( b.type === 'private' ) ? ku.filter(isPrvKeyUse)
-                                                                                   : ku.slice();
-                            return k;
-                        });
+                op = op.then( function ( k ) {
+                    if ( ka.name === 'HMAC' ) {
+                        if ( !ka.length ) ka.length = 8 * k.algorithm.length;
                     }
+                    if ( ka.name.search('RSA') == 0 ) {
+                        if ( !ka.modulusLength ) ka.modulusLength = (k.publicKey || k).algorithm.modulusLength;
+                        if ( !ka.publicExponent ) ka.publicExponent = (k.publicKey || k).algorithm.publicExponent;
+                    }
+                    if ( k.publicKey && k.privateKey ) {
+                        k = {
+                            publicKey: new CryptoKey( k.publicKey, ka, ku.filter(isPubKeyUse) ),
+                            privateKey: new CryptoKey( k.privateKey, ka, ku.filter(isPrvKeyUse) ),
+                        };
+                    }
+                    else {
+                        k = new CryptoKey( k, ka, ku );
+                    }
+                    return k;
+                });
+
+                return op;
+            }
+        });
+
+    [ 'exportKey', 'wrapKey' ]
+        .forEach( function ( m ) {
+            var _fn = _subtle[m];
+
+            _subtle[m] = function ( a, b, c ) {
+                var args = [].slice.call(arguments);
+
+                switch ( m ) {
+                    case 'exportKey':
+                        args[1] = b._key;
+                        break;
+                    case 'wrapKey':
+                        args[1] = b._key, args[2] = c._key;
+                        break;
                 }
-                else {
+
+                if ( isIE && m === 'wrapKey' ) {
+                    return _subtle.exportKey( a, b._key )
+                        .then( function ( k ) {
+                            if ( a === 'jwk' ) k = s2b( unescape( encodeURIComponent( JSON.stringify( b2jwk(k) ) ) ) );
+                            return  _subtle.encrypt( args[3], c._key, k );
+                        });
+                }
+
+                var op;
+                try {
+                    op = _fn.apply( _subtle, args );
+                }
+                catch ( e ) {
+                    return Promise.reject(e);
+                }
+
+                if ( isIE ) {
+                    op = new Promise( function ( res, rej ) {
+                        op.onabort =
+                        op.onerror =    function ( e ) { rej(e)               };
+                        op.oncomplete = function ( r ) { res(r.target.result) };
+                    });
+                }
+
+                if ( m === 'exportKey' && a === 'jwk' ) {
                     op = op.then( function ( k ) {
-                        if ( ka.name === 'HMAC' ) {
-                            ka.length = ka.length || 8 * k.algorithm.length;
-                        }
-                        if ( ka.name.search('RSA') == 0 ) {
-                            ka.modulusLength = ka.modulusLength || k.algorithm.modulusLength;
-                            ka.publicExponent = ka.publicExponent || k.algorithm.publicExponent;
-                        }
-                        if ( k.publicKey && k.privateKey ) {
-                            k = {
-                                publicKey: new CryptoKey( k.publicKey, ka, ku.filter(isPubKeyUse) ),
-                                privateKey: new CryptoKey( k.privateKey, ka, ku.filter(isPrvKeyUse) ),
-                            };
-                        }
-                        else {
-                            k = new CryptoKey( k, ka, ku );
-                        }
+                        k = b2jwk(k);
+                        if ( !k.alg ) k.alg = jwkAlg(b.algorithm);
+                        if ( !k.key_ops ) k.key_ops = ( b.type === 'public'  ) ? b.usages.filter(isPubKeyUse)
+                                                    : ( b.type === 'private' ) ? b.usages.filter(isPrvKeyUse)
+                                                                               : b.usages.slice();
                         return k;
                     });
                 }
@@ -334,21 +382,6 @@
             });
 
             return op;
-        };
-
-        _subtle['wrapKey'] = function ( a, b, c, d ) {
-            return _subtle.exportKey( a, b )
-                .then( function ( k ) {
-                    if ( a === 'jwk' ) k = s2b( unescape( encodeURIComponent( JSON.stringify( b2jwk(k) ) ) ) ).buffer
-                    return  _subtle.encrypt( d, c, k );
-                });
-        };
-
-        _subtle['unwrapKey'] = function ( a, b, c, d, e, f, g ) {
-            return _subtle.decrypt( d, c, b )
-                .then( function ( k ) {
-                    return _subtle.importKey( a, k, e, f, g );
-                });
         };
 
         global.crypto = Object.create( _crypto, { subtle: { value: _subtle } } );

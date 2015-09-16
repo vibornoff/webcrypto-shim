@@ -20,7 +20,6 @@
 
             /**
              * RSASSA-PKCS1-v1.5_SHA-256
-             */
 
             var rsaSsaAlg2 = { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256', modulusLength: 4096, publicExponent: s2b("\x01\x00\x01") };
 
@@ -57,6 +56,12 @@
                             document.write( "<p><code>var rsassa_pkcs1_sha256_signature_hello = '" + btoa( b2s(signature) ) + "';</code></p>\n" );
                         });
                 });
+             */
+
+            /**
+             * AES-CBC
+             */
+            var aesCbcAlg1 = { name: 'AES-CBC', length: 128, iv: crypto.getRandomValues( new Uint8Array(16) ) };
 
             /**
              * RSA-OAEP_SHA-1
@@ -65,7 +70,7 @@
             var rsaOaepAlg1 = { name: 'RSA-OAEP', hash: 'SHA-1', modulusLength: 2048, publicExponent: s2b("\x01\x00\x01") };
 
             crypto.subtle
-                .generateKey( rsaOaepAlg1, true, [ 'encrypt', 'decrypt' ] )
+                .generateKey( rsaOaepAlg1, true, [ 'encrypt', 'decrypt', 'wrapKey', 'unwrapKey' ] )
                 .then( function ( keyPair ) {
                     crypto.subtle.exportKey( 'spki', keyPair.publicKey )
                         .then( function ( pubKey ) {
@@ -96,11 +101,25 @@
                         .then( function ( ciphertext ) {
                             document.write( "<p><code>var rsa_oaep_sha1_ciphertext_hello = '" + btoa( b2s(ciphertext) ) + "';</code></p>\n" );
                         });
+
+                    crypto.subtle.generateKey( aesCbcAlg1, true, [ 'encrypt', 'decrypt' ] )
+                        .then( function ( secretKey ) {
+                            // encrypt string with secretKey
+                            crypto.subtle.encrypt( aesCbcAlg1, secretKey, s2b("test") )
+                                .then( function ( ciphertext ) {
+                                    document.write( "<p><code>var aes_cbc_128_iv = '" + btoa( b2s(aesCbcAlg1.iv) ) + "';</code></p>\n" );
+                                    document.write( "<p><code>var aes_cbc_128_ciphertext_test = '" + btoa( b2s(ciphertext) ) + "';</code></p>\n" );
+                                });
+                            // wrap secretKey with RSA publicKey
+                            crypto.subtle.wrapKey( 'raw', secretKey, keyPair.publicKey, rsaOaepAlg1 )
+                                .then( function ( wrappedKey ) {
+                                    document.write( "<p><code>var rsa_oaep_sha1_wrapped_aes_cbc_128_key = '" + btoa( b2s(wrappedKey) ) + "';</code></p>\n" );
+                                });
+                        });
                 });
 
             /**
              * RSA-OAEP_SHA-256
-             */
 
             var rsaOaepAlg2 = { name: 'RSA-OAEP', hash: 'SHA-256', modulusLength: 2048, publicExponent: s2b("\x01\x00\x01") };
 
@@ -137,6 +156,7 @@
                             document.write( "<p><code>var rsa_oaep_sha256_ciphertext_hello = '" + btoa( b2s(ciphertext) ) + "';</code></p>\n" );
                         });
                 });
+             */
         </script>
     </body>
 </html>

@@ -283,6 +283,53 @@ describe( 'RSA-OAEP_SHA-1', function () {
             });
         });
     });
+
+    describe( "unwrapKey", function () {
+        var vectors = [
+            { modLen: 2048,
+              jwkWrapKey: {"alg":"RSA-OAEP","e":"AQAB","ext":true,"key_ops":["encrypt","wrapKey"],"kty":"RSA","n":"vEsQ2OX9oR6ygnUZv2O7IA6TiXdHHyQSxDI_tJxGaQiqiWz5rQ9waWQL64-Dvo1F7-2A_oYoMW0MdcS5Vpqci4NLxHizohZ6Q1fhin5CttYqkm-s8scePCrbDI2FKcmGxgLA-zHSiOxqxuKIh8AqVwqCSfcP9IQnXAAP3mrC3RCamcYiWvzK17gXihb6oB3C_Mcr7oVpwq9M-IQuv2PSDtha4LdgOmOlHymlp1VyU_pHwj2Y3Y8qLWYu_AO1_Hvkybxj8q6TUwRhbZrFHSWBJRL2SweCbEanyL8l5Ml6WoTq3RkikA_2y8Hm191uwCsKytn4BM7Q0Fcvm_IH0eVXjQ"},
+              jwkUnwrapKey: {"alg":"RSA-OAEP","d":"YOFesbrkXNomjukhblAqH7xgPQKaHXO6FCimjo85yyEiXcMsU9b1x8QqPfGBn7GgompZTJxKYePx3UZy9hRnJ4FOorBX_LYEAlJdQZzlRp27Gc1L9z5sWBjUzAik03NVXNxd3uErqje6WMqF5RMCtfY6Q0RTeUPl3HhLsezMhmD5ff4fMJuzWZEA_DsSGa50Jki74YKEKWFPzP8pRMoFw754leguS33TY2mSRQi0BDOeveqAQvIlvVE_3-sX8xhInovzkZEYNOf3r_2h8oQ1xG1C6KtF0URo54uHx3OJ2omiQxQjfV4ZnWK7-ENW0-Ae6z_tNXbaYNeFsxO4U1_kAQ","dp":"amUYdod7LMkxZZ_oGMh5zyb3LDYlDhlhpgJw1Pb-IDxcaqVGLlwilSUc0GR1MFtFMR7tl5EdT74DQjeKwYfGCDu6rwJlMfcQZBY1flkuhwju64rvncac_AWHowlkggEaRKbCtH6saktF8Cy0Gp4QgFe-jdi_LkeiygT77Wz3b_E","dq":"X7pSwpOzjPDkmerbZM7n03kxkvTw2IAsLT8SLeKWQJ-5O-xuInqjonOuXQGWXpLQotIa_D_AmX0T9Q8OOwi6ebvXBFIGgDGgF7yTU84bW1ygcvs0OComfE9Dyq-oGexbQp5kbWPw6EpfYh9DMR-5hH26NdX2or979D8ZZeyCIwE","e":"AQAB","ext":true,"key_ops":["decrypt","unwrapKey"],"kty":"RSA","n":"vEsQ2OX9oR6ygnUZv2O7IA6TiXdHHyQSxDI_tJxGaQiqiWz5rQ9waWQL64-Dvo1F7-2A_oYoMW0MdcS5Vpqci4NLxHizohZ6Q1fhin5CttYqkm-s8scePCrbDI2FKcmGxgLA-zHSiOxqxuKIh8AqVwqCSfcP9IQnXAAP3mrC3RCamcYiWvzK17gXihb6oB3C_Mcr7oVpwq9M-IQuv2PSDtha4LdgOmOlHymlp1VyU_pHwj2Y3Y8qLWYu_AO1_Hvkybxj8q6TUwRhbZrFHSWBJRL2SweCbEanyL8l5Ml6WoTq3RkikA_2y8Hm191uwCsKytn4BM7Q0Fcvm_IH0eVXjQ","p":"89ahUS3Qssx0TDayMVmnVUTGRKh1NKlNvIAdbgpE49clxRK8UTxrJxCrN5-CI0_eTpou0zDsWTHWZEp0v2MUhMvaI2zKShdwuEL6NDKtiIkhhYyUU_4XTLCkzI0n4tR1XMp1oGbaKIiBu1dy1YOOHMr06dPtldnWQuO6aJIlJG0","q":"xa85u0K2HZd4T6DsDonQZO_X1G28WXM6YYjeWqRVNWqfXCInfCqkBJOHEmQudvFYQuCvIKzr4Ds4WqC2UiQuvcazh8jY-c5P93Rw70w0vByeW_z15UU7fIeE0splZKRXXlwUfL58Y1eA18kPrzqd4VdNRiXqpUCWIed1bMjjy6E","qi":"qHAp5_62ytVWUXtBNOS6OXVxoMx22sn3x0h6k3owUvAeGLjPg_pTfKKlLxH7EEEnu3iFoAAxaYRfTmnhguwlhI9gq2tdg2mEXPTAZgYBHpdfAAULKKobDuk8rtHwTXxupEXKfeNzUPliH-PfaIGdjp6OVjiH1qWLImnkZu7PYS4"},
+              wrappedSecret: 'DyW4O4mImw/HG/dEA4TlY1eel6wGZ3AheqgSEQ4ruxuotGQbMBW2XTKFJWS5HlY3Be1zsOYg+RJzr+69Ma5RodE9Q+huI0CLKxs99nrADPDjIpQu1wWKipgjWY7iCSooMQkfAdmhWbrIhTfzTrYk4NANFUT5fHbmMy1I9BGbHolPxerKIF85KNGEzRt3a5vokyTedwdBWqNIyfVa5DY4FSTY7Fyv7Na3wTR1Yx/tj0pDXR10HZBcGTPn0rzzs9667wv+3Kbggk11eWQkOvKop2R/p37/zKoMXgprGd6OvoXDeZFVE9dNzCoNIxbLV2o4dXgKFuBOFclINnjOyqfgGA==',
+              secretIv: '16eu2GxWu4Wo/ly1uOas6Q==',
+              secretAlg: { name: 'AES-CBC', length: 128 },
+              ciphertext: 'lXIyndrvPD+XxeYLLmpNrg==',
+              text: 'test' },
+        ];
+
+        vectors.forEach( function ( v ) {
+            describe( v.modLen + " bits", function ( done ) {
+                var unwrapKeyAlg = extend( normalizeAlg(alg), { modulusLength: v.modLen, publicExponent: x2b('10001') } );
+
+                it( "'" + v.wrappedSecret + "'", function ( done ) {
+                    crypto.subtle.importKey( "jwk", v.jwkUnwrapKey, alg, false, [ 'unwrapKey' ] )
+                        .then( function ( unwrapKey ) {
+                            expect(unwrapKey).toEqual(jasmine.any(CryptoKey));
+                            expect(unwrapKey.type).toBe('private');
+                            expect(unwrapKey.extractable).toBe(false);
+                            expect(unwrapKey.algorithm).toEqual(unwrapKeyAlg);
+                            expect(unwrapKey.usages).toEqual(['unwrapKey']);
+                            return unwrapKey;
+                        })
+                        .then( function ( unwrapKey ) {
+                            return crypto.subtle.unwrapKey( "raw", s2b( atob(v.wrappedSecret) ), unwrapKey, alg, v.secretAlg, false, [ prvUse ] )
+                        })
+                        .then( function ( secretKey ) {
+                            expect(secretKey).toEqual(jasmine.any(CryptoKey));
+                            expect(secretKey.type).toBe('secret');
+                            expect(secretKey.extractable).toBe(false);
+                            expect(secretKey.algorithm).toEqual(v.secretAlg);
+                            expect(secretKey.usages).toEqual([prvUse]);
+                            return crypto.subtle.decrypt( extend( v.secretAlg, { iv: s2b( atob(v.secretIv) ) } ), secretKey, s2b( atob(v.ciphertext) ) );
+                        })
+                        .then( function ( plaintext ) {
+                            expect( b2s(plaintext) ).toBe(v.text);
+                        })
+                        .catch(fail)
+                        .then(done);
+                });
+            });
+        });
+    });
 });
 
 /*
