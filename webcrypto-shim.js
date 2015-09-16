@@ -23,6 +23,15 @@
         isWebkit = !!_crypto.webkitSubtle;
     if ( !isIE && !isWebkit ) return;
 
+    function s2a ( s ) {
+        return btoa( unescape( encodeURIComponent( s ) ) ).replace(/\=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    }
+
+    function a2s ( s ) {
+        s += '===', s = s.slice( 0, -s.length % 4 );
+        return decodeURIComponent( escape( atob( s.replace(/-/g, '+').replace(/_/g, '/') ) ) );
+    }
+
     function s2b ( s ) {
         var b = new Uint8Array(s.length);
         for ( var i = 0; i < s.length; i++ ) b[i] = s.charCodeAt(i);
@@ -40,6 +49,7 @@
             case 'SHA-1':
             case 'SHA-256':
             case 'SHA-384':
+            case 'SHA-512':
                 break;
             case 'AES-CBC':
             case 'AES-GCM':
@@ -172,7 +182,12 @@
                         break;
                     case 'importKey':
                         ka = alg(c), ku = args[4];
-                        if ( a === 'jwk' ) args[1] = jwk2b(b);
+                        if ( a === 'jwk' ) {
+                            b = b2jwk(b);
+                            if ( !b.alg ) b.alg = jwkAlg(ka);
+                            if ( !b.key_ops ) b.key_ops = ( b.kty.toLowerCase() !== 'oct' ) ? ( 'd' in b ) ? ku.filter(isPrvKeyUse) : ku.filter(isPubKeyUse) : ku.slice();
+                            args[1] = jwk2b(b);
+                        }
                         break;
                     case 'unwrapKey':
                         ka = args[4], ku = args[6];
@@ -210,10 +225,15 @@
                         });
                 }
 
+                if ( ( isWebkit || ( isIE && ( ka.hash || {} ).name === 'SHA-1' ) )
+                        && m === 'importKey' && a === 'jwk' && ka.name === 'HMAC' && b.kty === 'oct' ) {
+                    return _subtle.importKey( 'raw', s2b( a2s(b.k) ), c, args[3], args[4] );
+                }
+
                 if ( isIE && m === 'unwrapKey' ) {
                     return _subtle.decrypt( args[3], c._key, b )
                         .then( function ( k ) {
-                            return _subtle.importKey( a, k, e, f, g );
+                            return _subtle.importKey( a, k, args[4], args[5], args[6] );
                         });
                 }
 
@@ -273,6 +293,11 @@
                         break;
                 }
 
+                if ( ( isWebkit || ( isIE && ( b.algorithm.hash || {} ).name === 'SHA-1' ) )
+                        && m === 'exportKey' && a === 'jwk' && b.algorithm.name === 'HMAC' ) {
+                    args[0] = 'raw';
+                }
+
                 if ( isIE && m === 'wrapKey' ) {
                     return _subtle.exportKey( a, b._key )
                         .then( function ( k ) {
@@ -299,11 +324,13 @@
 
                 if ( m === 'exportKey' && a === 'jwk' ) {
                     op = op.then( function ( k ) {
+                        if ( ( isWebkit || ( isIE && ( b.algorithm.hash || {} ).name === 'SHA-1' ) )
+                                && b.algorithm.name === 'HMAC') {
+                            return { 'kty': 'oct', 'alg': jwkAlg(b.algorithm), 'key_ops': b.usages.slice(), 'ext': true, 'k': s2a( b2s(k) ) };
+                        }
                         k = b2jwk(k);
-                        if ( !k.alg ) k.alg = jwkAlg(b.algorithm);
-                        if ( !k.key_ops ) k.key_ops = ( b.type === 'public'  ) ? b.usages.filter(isPubKeyUse)
-                                                    : ( b.type === 'private' ) ? b.usages.filter(isPrvKeyUse)
-                                                                               : b.usages.slice();
+                        if ( !k.alg ) k['alg'] = jwkAlg(b.algorithm);
+                        if ( !k.key_ops ) k['key_ops'] = ( b.type === 'public' ) ? b.usages.filter(isPubKeyUse) : ( b.type === 'private' ) ? b.usages.filter(isPrvKeyUse) : b.usages.slice();
                         return k;
                     });
                 }
@@ -316,7 +343,10 @@
         .forEach( function ( m ) {
             var _fn = _subtle[m];
 
-            _subtle[m] = function ( a, b, c ) {
+            _subtle[m] = function ( a, b, c, d ) {
+                if ( isIE && ( !c.byteLength || ( d && !d.byteLength ) ) )
+                    throw new Error("Empy input is not allowed");
+
                 var args = [].slice.call(arguments),
                     ka = alg(a);
 
@@ -367,6 +397,9 @@
         var _digest = _subtle.digest;
 
         _subtle['digest'] = function ( a, b ) {
+            if ( !b.byteLength )
+                throw new Error("Empy input is not allowed");
+
             var op;
             try {
                 op = _digest.call( _subtle, a, b );

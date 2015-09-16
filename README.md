@@ -36,43 +36,37 @@ These browsers have unprefixed and conforming webcrypto api implementations, so 
 * _Firefox 34+_,
 * _Edge 12+_.
 
-Supported algorithms & operations
----------------------------------
+Crossbrowser support of algorithms & operations
+-----------------------------------------------
 
 * **SHA-256**, **SHA-384**: `digest`
-  * _IE11_ doesn't support **SHA-1**, though [doc claims](https://msdn.microsoft.com/en-us/library/dn302338\(v=vs.85\).aspx) it should work
 
-* **HMAC** (with hash: **SHA-1**, **SHA-256**, **SHA-384**): `sign`, `verify`, `generateKey`, `importKey`, `exportKey`
-  * importing `"jwk"` key for **HMAC\_SHA-1** fails
+* **HMAC**: `sign`, `verify`, `generateKey`, `importKey`, `exportKey`
+  * with _hash_ **SHA-1**, **SHA-256**, **SHA-384**
 
 * **AES-CBC**: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
-
-* **AES-GCM**: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
-  *  _Safari_ doesn't support **AES-GCM**
-  * _IE11_ requires `iv` parameter length must be exactly _96_ bits (_12_ octets)
+  * _TODO_ tests
 
 * **AES-KW**: `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
   * _TODO_ tests
 
-* **RSASSA-PKCS1-v1\_5** (with hash: **SHA-256**, **SHA-384**): `sign`, `verify`, `generateKey`, `importKey`, `exportKey`
-  * under _IE11_ only `generateKey` and `exportKey` work with **SHA-1** hash
+* **RSASSA-PKCS1-v1\_5**: `sign`, `verify`, `generateKey`, `importKey`, `exportKey`
+  * with _hash_ **SHA-256**, **SHA-384**
+  * and _modulusLength_ at least 2048 bits
+  * _FIXME_ only `"jwk"` format for imported/exported keys
 
-* **RSAES-PKCS1-v1\_5**: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
-  * only _IE11_ and _Safari_ support this algorithm
-  * _TODO_ tests
-
-* **RSA-OAEP** (with hash/MGF1: **SHA-1**, **SHA-256**): `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
-  * _Safari_ supports this algorithm only with **SHA-1** hash
-  * _TODO_ tests
+* **RSA-OAEP**: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
+  * with _hash_ **SHA-1**
+  * and _modulusLength_ at least 2048 bits
+  * _FIXME_ only `"jwk"` format for imported/exported keys
+  * _FIXME_ only `"jwk"` format for wrapped/unwrapped keys
 
 Known limitations
 -----------------
 
 `deriveKey`, `deriveBits` are not supported under _IE11_ and _Safari_  since there is no implementation of any algorithm providing key derivation.
 
-_IE11_ silently discards empty input leaving returned `Promise` object in pending state.
-
-_Safari_ prevents RSA keys of size smaller than 2048 bits to be imported/exported.
+Under _IE11_ exception is thrown in case of empty input data since _IE11_ silently discards empty data and leaves returned `Promise` object never resolved nor rejected.
 
 Other browsers support
 ----------------------
