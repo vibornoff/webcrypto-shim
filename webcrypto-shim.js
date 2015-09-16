@@ -24,12 +24,12 @@
     if ( !isIE && !isWebkit ) return;
 
     function s2a ( s ) {
-        return btoa( unescape( encodeURIComponent( s ) ) ).replace(/\=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+        return btoa(s).replace(/\=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
     }
 
     function a2s ( s ) {
         s += '===', s = s.slice( 0, -s.length % 4 );
-        return decodeURIComponent( escape( atob( s.replace(/-/g, '+').replace(/_/g, '/') ) ) );
+        return atob( s.replace(/-/g, '+').replace(/_/g, '/') );
     }
 
     function s2b ( s ) {
