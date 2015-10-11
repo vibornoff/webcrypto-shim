@@ -53,12 +53,10 @@ Crossbrowser support of algorithms & operations
 * **RSASSA-PKCS1-v1\_5**: `sign`, `verify`, `generateKey`, `importKey`, `exportKey`
   * with _hash_ **SHA-256**, **SHA-384**
   * and _modulusLength_ at least 2048 bits
-  * _FIXME_ only `"jwk"` format for imported/exported keys
 
 * **RSA-OAEP**: `encrypt`, `decrypt`, `generateKey`, `importKey`, `exportKey`, `wrapKey`, `unwrapKey`
   * with _hash_ **SHA-1**
   * and _modulusLength_ at least 2048 bits
-  * _FIXME_ only `"jwk"` format for imported/exported keys
   * _FIXME_ only `"jwk"` format for wrapped/unwrapped keys
 
 Known limitations
