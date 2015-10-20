@@ -262,8 +262,9 @@
             tag = 0x30, len = buf.length - pos;
         }
         else if ( typeof val === 'object' && val.tag === 0x03 && val.value instanceof ArrayBuffer ) { // Tag hint
-            val = new Uint8Array(val.value), tag = 0x03, len = val.byteLength + 1;
+            val = new Uint8Array(val.value), tag = 0x03, len = val.byteLength;
             buf.push(0); for ( var i = 0; i < len; i++ ) buf.push( val[i] );
+            len++;
         }
         else {
             throw new Error( "Unsupported DER value " + val );
