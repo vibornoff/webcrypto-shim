@@ -579,7 +579,10 @@
             return op;
         };
 
-        global.crypto = Object.create( _crypto, { subtle: { value: _subtle } } );
+        global.crypto = Object.create( _crypto, {
+            getRandomValues: { value: function ( a ) { return _crypto.getRandomValues(a) } },
+            subtle:          { value: _subtle },
+        });
 
         global.CryptoKey = CryptoKey;
     }

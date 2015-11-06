@@ -3,6 +3,7 @@ describe( 'General support of Web Cryptography API', function () {
         expect(typeof Crypto).not.toBe('undefined');
         expect(window.crypto).toEqual(jasmine.any(Crypto));
         expect(window.crypto.getRandomValues).toEqual(jasmine.any(Function));
+        expect(window.crypto.getRandomValues(new Uint8Array(10))).toEqual(jasmine.any(Uint8Array));
     });
 
     it( 'window.crypto.subtle', function () {
