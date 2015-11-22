@@ -283,7 +283,7 @@
         return buf;
     }
 
-    function CryptoKey ( key, alg, use ) {
+    function CryptoKey ( key, alg, ext, use ) {
         Object.defineProperties( this, {
             _key: {
                 value: key
@@ -293,15 +293,15 @@
                 enumerable: true,
             },
             extractable: {
-                value: key.extractable,
+                value: (ext === undefined) ? key.extractable : ext,
                 enumerable: true,
             },
             algorithm: {
-                value: alg,
+                value: (alg === undefined) ? key.algorithm : alg,
                 enumerable: true,
             },
             usages: {
-                value: use,
+                value: (use === undefined) ? key.usages : use,
                 enumerable: true,
             },
         });
@@ -321,14 +321,14 @@
 
             _subtle[m] = function ( a, b, c ) {
                 var args = [].slice.call(arguments),
-                    ka, ku;
+                    ka, kx, ku;
 
                 switch ( m ) {
                     case 'generateKey':
-                        ka = alg(a), ku = c;
+                        ka = alg(a), kx = b, ku = c;
                         break;
                     case 'importKey':
-                        ka = alg(c), ku = args[4];
+                        ka = alg(c), kx = args[3], ku = args[4];
                         if ( a === 'jwk' ) {
                             b = b2jwk(b);
                             if ( !b.alg ) b.alg = jwkAlg(ka);
@@ -337,14 +337,14 @@
                         }
                         break;
                     case 'unwrapKey':
-                        ka = args[4], ku = args[6];
+                        ka = args[4], kx = args[5], ku = args[6];
                         args[2] = c._key;
                         break;
                 }
 
                 if ( m === 'generateKey' && ka.name === 'HMAC' && ka.hash ) {
                     ka.length = ka.length || { 'SHA-1': 512, 'SHA-256': 512, 'SHA-384': 1024, 'SHA-512': 1024 }[ka.hash.name];
-                    return _subtle.importKey( 'raw', _crypto.getRandomValues( new Uint8Array( (ka.length+7)>>3 ) ), ka, b, c );
+                    return _subtle.importKey( 'raw', _crypto.getRandomValues( new Uint8Array( (ka.length+7)>>3 ) ), ka, kx, ku );
                 }
 
                 if ( isWebkit && m === 'generateKey' && ka.name === 'RSASSA-PKCS1-v1_5' && ( !ka.modulusLength || ka.modulusLength >= 2048 ) ) {
@@ -360,8 +360,8 @@
                             keys[0].alg = keys[1].alg = jwkAlg(ka);
                             keys[0].key_ops = ku.filter(isPubKeyUse), keys[1].key_ops = ku.filter(isPrvKeyUse);
                             return Promise.all([
-                                _subtle.importKey( 'jwk', keys[0], ka, b, keys[0].key_ops ),
-                                _subtle.importKey( 'jwk', keys[1], ka, b, keys[1].key_ops ),
+                                _subtle.importKey( 'jwk', keys[0], ka, kx, keys[0].key_ops ),
+                                _subtle.importKey( 'jwk', keys[1], ka, kx, keys[1].key_ops ),
                             ]);
                         })
                         .then( function ( keys ) {
@@ -414,12 +414,12 @@
                     }
                     if ( k.publicKey && k.privateKey ) {
                         k = {
-                            publicKey: new CryptoKey( k.publicKey, ka, ku.filter(isPubKeyUse) ),
-                            privateKey: new CryptoKey( k.privateKey, ka, ku.filter(isPrvKeyUse) ),
+                            publicKey: new CryptoKey( k.publicKey, ka, kx, ku.filter(isPubKeyUse) ),
+                            privateKey: new CryptoKey( k.privateKey, ka, kx, ku.filter(isPrvKeyUse) ),
                         };
                     }
                     else {
-                        k = new CryptoKey( k, ka, ku );
+                        k = new CryptoKey( k, ka, kx, ku );
                     }
                     return k;
                 });
