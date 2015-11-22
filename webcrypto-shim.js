@@ -382,7 +382,7 @@
                 }
 
                 if ( isIE && m === 'unwrapKey' ) {
-                    return _subtle.decrypt( args[3], c._key, b )
+                    return _subtle.decrypt( args[3], c, b )
                         .then( function ( k ) {
                             return _subtle.importKey( a, k, args[4], args[5], args[6] );
                         });
@@ -454,10 +454,10 @@
                 }
 
                 if ( isIE && m === 'wrapKey' ) {
-                    return _subtle.exportKey( a, b._key )
+                    return _subtle.exportKey( a, b )
                         .then( function ( k ) {
                             if ( a === 'jwk' ) k = s2b( unescape( encodeURIComponent( JSON.stringify( b2jwk(k) ) ) ) );
-                            return  _subtle.encrypt( args[3], c._key, k );
+                            return  _subtle.encrypt( args[3], c, k );
                         });
                 }
 
