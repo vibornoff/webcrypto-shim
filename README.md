@@ -70,3 +70,8 @@ Other browsers support
 ----------------------
 
 See https://vibornoff.github.io/webcrypto-examples/index.html
+
+Sponsored by
+------------
+
+[BrowserStack](https://browserstack.com) — automated & manual crossbrowser testing solution.
