@@ -360,7 +360,7 @@
                             keys[0].alg = keys[1].alg = jwkAlg(ka);
                             keys[0].key_ops = ku.filter(isPubKeyUse), keys[1].key_ops = ku.filter(isPrvKeyUse);
                             return Promise.all([
-                                _subtle.importKey( 'jwk', keys[0], ka, kx, keys[0].key_ops ),
+                                _subtle.importKey( 'jwk', keys[0], ka, true, keys[0].key_ops ),
                                 _subtle.importKey( 'jwk', keys[1], ka, kx, keys[1].key_ops ),
                             ]);
                         })
