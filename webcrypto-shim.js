@@ -19,8 +19,9 @@
         _SubtleCrypto = global.SubtleCrypto || _subtle.constructor || Object,
         _CryptoKey  = global.CryptoKey || global.Key || Object;
 
-    var isIE    = !!global.msCrypto,
-        isWebkit = !_crypto.subtle && !!_crypto.webkitSubtle;
+    var isEdge = global.navigator.userAgent.indexOf('Edge/') > -1;
+    var isIE    = !!global.msCrypto && !isEdge;
+    var isWebkit = !_crypto.subtle && !!_crypto.webkitSubtle;
     if ( !isIE && !isWebkit ) return;
 
     function s2a ( s ) {
