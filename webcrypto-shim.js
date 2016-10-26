@@ -594,4 +594,4 @@
         global.SubtleCrypto = _SubtleCrypto;
         global.CryptoKey = CryptoKey;
     }
-}(this);
+}( typeof window === 'undefined' ? typeof 'self' === 'undefined' ? this : self : window );
