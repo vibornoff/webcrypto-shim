@@ -3,9 +3,9 @@
  * @author Artem S Vybornov <vybornov@gmail.com>
  * @license MIT
  */
+
 !function ( global ) {
     'use strict';
-
     if ( typeof Promise !== 'function' )
         throw "Promise support required";
 
@@ -594,4 +594,4 @@
         global.SubtleCrypto = _SubtleCrypto;
         global.CryptoKey = CryptoKey;
     }
-}( typeof window === 'undefined' ? typeof 'self' === 'undefined' ? this : self : window );
+}( typeof window === 'undefined' ? typeof self === 'undefined' ? this : self : window );
