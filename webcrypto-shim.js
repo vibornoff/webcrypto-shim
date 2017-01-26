@@ -3,9 +3,9 @@
  * @author Artem S Vybornov <vybornov@gmail.com>
  * @license MIT
  */
-
 !function ( global ) {
     'use strict';
+
     if ( typeof Promise !== 'function' )
         throw "Promise support required";
 
