@@ -1,7 +1,7 @@
 webcrypto-shim.js
 =================
 
-[Web Cryptography API](www.w3.org/TR/WebCryptoAPI/) shim for legacy browsers.
+[Web Cryptography API](https://www.w3.org/TR/WebCryptoAPI/) shim for legacy browsers.
 
 Quick start with _Bower_
 ------------------------
