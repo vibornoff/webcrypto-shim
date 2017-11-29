@@ -28,13 +28,14 @@ Supported browsers
 
 The library is targeted to fix these browsers having prefixed and buggy webcrypto api implementations:
 * _Internet Explorer 11_, _Mobile Internet Explorer 11_,
-* _Safari 8+_, _iOS Safari 8+_.
+* _Safari 8 - 10_, _iOS Safari 8 - 10_.
 
 These browsers have unprefixed and conforming webcrypto api implementations, so no need in shim:
 * _Chrome 43+_, _Chrome for Android 44+_,
 * _Opera 24+_,
 * _Firefox 34+_,
 * _Edge 12+_.
+* _Safari 11+_.
 
 Crossbrowser support of algorithms & operations
 -----------------------------------------------
