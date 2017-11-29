@@ -31,5 +31,14 @@
     "rsa",
     "oaep",
     "pkcs1"
-  ]
+  ],
+  "dependencies": {
+    "gulp": "latest",
+    "gulp-sourcemaps":"latest",
+    "gulp-uglify":"latest",
+    "gulp-concat":"latest"
+  },
+  "scripts": {
+    "prepublish": "gulp"
+  }
 }
