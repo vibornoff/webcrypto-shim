@@ -3,7 +3,19 @@
  * @author Artem S Vybornov <vybornov@gmail.com>
  * @license MIT
  */
-!function ( global ) {
+(function (global, factory) {
+    if (typeof define === 'function' && define.amd) {
+        // AMD. Register as an anonymous module.
+        define([], function () {
+            return factory(global);
+        });
+    } else if (typeof module === 'object' && module.exports) {
+        // CommonJS-like environments that support module.exports
+        module.exports = factory(global);
+    } else {
+        factory(global);
+    }
+}(typeof self !== 'undefined' ? self : this, function (global) {
     'use strict';
 
     if ( typeof Promise !== 'function' )
@@ -595,4 +607,4 @@
         global.SubtleCrypto = _SubtleCrypto;
         global.CryptoKey = CryptoKey;
     }
-}( typeof window === 'undefined' ? typeof self === 'undefined' ? this : self : window );
+}));
