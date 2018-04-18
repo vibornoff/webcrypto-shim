@@ -32,7 +32,7 @@
     "oaep",
     "pkcs1"
   ],
-  "dependencies": {
+  "devDependencies": {
     "gulp": "latest",
     "gulp-sourcemaps":"latest",
     "gulp-uglify":"latest",
