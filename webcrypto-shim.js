@@ -525,6 +525,10 @@
                 var args = [].slice.call(arguments),
                     ka = alg(a);
 
+                if ( isIE && ( m === 'encrypt' || m === 'decrypt' ) && ka.name === 'RSA-OAEP' ) {
+                    args[0].hash = b.hash;
+                }
+
                 if ( isIE && m === 'decrypt' && ka.name === 'AES-GCM' ) {
                     var tl = a.tagLength >> 3;
                     args[2] = (c.buffer || c).slice( 0, c.byteLength - tl ),
