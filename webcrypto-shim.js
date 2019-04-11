@@ -525,8 +525,8 @@
                 var args = [].slice.call(arguments),
                     ka = alg(a);
 
-                if ( isIE && ( m === 'encrypt' || m === 'decrypt' ) && ka.name === 'RSA-OAEP' ) {
-                    args[0].hash = b.hash;
+                if ( isIE && ( m === 'encrypt' || m === 'decrypt' ) && b.algorithm.hash ) {
+                    args[0].hash = args[0].hash || b.algorithm.hash;
                 }
 
                 if ( isIE && m === 'decrypt' && ka.name === 'AES-GCM' ) {
