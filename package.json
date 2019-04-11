@@ -1,7 +1,7 @@
 {
   "name": "webcrypto-shim",
   "main": "webcrypto-shim.js",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Web Cryptography API shim for legacy browsers",
   "license": "MIT",
   "author": "Artem S Vybornov <vybornov@gmail.com>",
