@@ -525,7 +525,11 @@
                 var args = [].slice.call(arguments),
                     ka = alg(a);
 
-                if ( isIE && ( m === 'encrypt' || m === 'decrypt' ) && b.algorithm.hash ) {
+                if ( isIE && ( m === 'sign' || m === 'verify') && ( a === 'RSASSA-PKCS1-v1_5' || a === 'HMAC' ) ) {
+                    args[0] = { name: a };
+                }
+
+                if ( isIE && b.algorithm.hash ) {
                     args[0].hash = args[0].hash || b.algorithm.hash;
                 }
 
