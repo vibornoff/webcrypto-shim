@@ -33,10 +33,10 @@
     "pkcs1"
   ],
   "devDependencies": {
-    "gulp": "^4.0.0",
+    "gulp": "latest",
     "gulp-concat": "latest",
-    "gulp-sourcemaps": "^2.6.5",
-    "gulp-uglify": "^3.0.2"
+    "gulp-sourcemaps": "latest",
+    "gulp-uglify": "latest"
   },
   "scripts": {
     "prepublish": "gulp"
