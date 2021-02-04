@@ -520,7 +520,7 @@
 
             _subtle[m] = function ( a, b, c, d ) {
                 if ( isIE && ( !c.byteLength || ( d && !d.byteLength ) ) )
-                    throw new Error("Empy input is not allowed");
+                    throw new Error("Empty input is not allowed");
 
                 var args = [].slice.call(arguments),
                     ka = alg(a);
@@ -581,7 +581,7 @@
 
         _subtle['digest'] = function ( a, b ) {
             if ( !b.byteLength )
-                throw new Error("Empy input is not allowed");
+                throw new Error("Empty input is not allowed");
 
             var op;
             try {
