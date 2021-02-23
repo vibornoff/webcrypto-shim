@@ -37,4 +37,13 @@ describe( 'AES-GCM' , function () {
             .catch(fail)
             .then(done);
     });
+
+    it( "w/ default tagLength", function ( done ) {
+        genKeyComplete
+            .then( function () {
+                return crypto.subtle.encrypt( extend( alg, { iv: new Uint8Array(12) } ), key, new Uint8Array(16) )
+            })
+            .catch(fail)
+            .then(done);
+    });
 });
