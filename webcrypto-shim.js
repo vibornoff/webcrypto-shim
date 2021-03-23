@@ -539,6 +539,10 @@
                     a.tag = (c.buffer || c).slice( c.byteLength - tl );
                 }
 
+                if ( isIE && ka.name === 'AES-GCM' && args[0].tagLength === undefined ) {
+                    args[0].tagLength = 128;
+                }
+
                 args[1] = b._key;
 
                 var op;
